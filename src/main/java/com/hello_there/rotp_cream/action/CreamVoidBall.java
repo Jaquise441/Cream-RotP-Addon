@@ -28,6 +28,7 @@ import net.minecraft.util.math.vector.Vector3d;
 import net.minecraft.world.World;
 import net.minecraft.world.server.ServerWorld;
 
+import javax.annotation.Nullable;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.HashMap;
@@ -60,13 +61,13 @@ public class CreamVoidBall extends StandEntityAction {
         LivingEntity user = standEntity.getUser();
         if (user == null || world.isClientSide) return;
 
-        playSound((PlayerEntity) user, InitSounds.CREAM_VOID_START.get(), false);
         isVoidBallActive = true;
         activeTicks = 0;
         userPower.setCooldownTimer(InitStands.CREAM_VOID_BALL_CANCEL.get(), 20);
 
         if (user instanceof PlayerEntity) {
             applyInvulnerability((PlayerEntity) user);
+            playSound((PlayerEntity) user, InitSounds.CREAM_VOID_START.get(), false);
         }
 
         user.addEffect(new EffectInstance(ModStatusEffects.FULL_INVISIBILITY.get(), Integer.MAX_VALUE, 1, false, false));
@@ -94,7 +95,7 @@ public class CreamVoidBall extends StandEntityAction {
 
         soundCD -= 1 / 20.0;
 
-        if (soundCD <= 0) {
+        if (soundCD <= 0 && user instanceof PlayerEntity) {
             playSound((PlayerEntity) user, InitSounds.CREAM_VOID_FORM_SHORT.get(), true);
             soundCD = SIS;
         }
@@ -113,7 +114,7 @@ public class CreamVoidBall extends StandEntityAction {
             }
         });
 
-        if (anyEntityTeleported.get()) {
+        if (anyEntityTeleported.get() && user instanceof PlayerEntity) {
             playSound((PlayerEntity) user, InitSounds.CREAM_VOID.get(), false);
         }
 
@@ -194,11 +195,11 @@ public class CreamVoidBall extends StandEntityAction {
 
         if (user instanceof PlayerEntity) {
             removeInvulnerability((PlayerEntity) user);
+            stopSound((PlayerEntity) user, InitSounds.CREAM_VOID_START.get());
+            stopSound((PlayerEntity) user, InitSounds.CREAM_VOID_FORM_SHORT.get());
+            lastSoundPosition = null;
+            playSound((PlayerEntity) user, InitSounds.CREAM_VOID_END.get(), false);
         }
-        stopSound((PlayerEntity) user, InitSounds.CREAM_VOID_START.get());
-        stopSound((PlayerEntity) user, InitSounds.CREAM_VOID_FORM_SHORT.get());
-        lastSoundPosition = null;
-        playSound((PlayerEntity) user, InitSounds.CREAM_VOID_END.get(), false);
     }
 
     private void applyInvulnerability(PlayerEntity player) {
@@ -207,12 +208,13 @@ public class CreamVoidBall extends StandEntityAction {
         }
     }
 
+    @Nullable
     @Override
-    protected Action<IStandPower> replaceAction(IStandPower power, ActionTarget target) {
-        if (isVoidBallActive) {
+    public Action<IStandPower> getVisibleAction(IStandPower power, ActionTarget target) {
+        if (isVoidBallActive()) {
             return InitStands.CREAM_VOID_BALL_CANCEL.get();
         }
-        return super.replaceAction(power, target);
+        return super.getVisibleAction(power, target);
     }
 
     private void removeInvulnerability(PlayerEntity player) {

@@ -40,4 +40,8 @@ public class CreamVoidBallCancel extends StandEntityAction {
             }
         }
     }
+    @Override
+    public boolean isUnlocked(IStandPower power) {
+        return InitStands.CREAM_VOID_BALL.get().isUnlocked(power);
+    }
 }
