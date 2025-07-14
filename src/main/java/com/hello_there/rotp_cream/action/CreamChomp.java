@@ -66,7 +66,7 @@ public class CreamChomp extends StandEntityAction {
             LivingEntity livingTarget = (LivingEntity) targetEntity;
 
             if (!world.isClientSide) {
-                livingTarget.addEffect(new EffectInstance(ModStatusEffects.STUN.get(), 20, 0));
+                livingTarget.addEffect(new EffectInstance(ModStatusEffects.STUN.get(), 20, 0, false, false));
             }
         }
 
