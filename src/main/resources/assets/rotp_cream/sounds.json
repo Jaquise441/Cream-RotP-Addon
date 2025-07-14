@@ -1,0 +1,76 @@
+{
+  "cream_summon": {
+    "subtitle": "Stand Summon",
+    "sounds": [ "rotp_cream:stand/cream_summon", "rotp_cream:stand/cream_summon2", "rotp_cream:stand/cream_summon3" ]
+  },
+
+  "cream_unsummon": {
+    "subtitle": "Stand Unsummon",
+    "sounds": [ "rotp_cream:stand/cream_unsummon", "rotp_cream:stand/cream_unsummon2", "rotp_cream:stand/cream_unsummon3" ]
+  },
+
+  "cream_void_form": {
+    "subtitle": "Rumble of the Void",
+    "sounds": [ "rotp_cream:stand/cream_void_form" ]
+  },
+
+  "cream_roar": {
+    "subtitle": "Cream Roaring",
+    "sounds": [ "rotp_cream:stand/cream_roar6", "rotp_cream:stand/cream_roar7", "rotp_cream:stand/cream_roar8" ]
+  },
+
+  "cream_void_form_short": {
+    "subtitle": "Rumble of the Void",
+    "sounds": [ "rotp_cream:stand/cream_void_form_short" ]
+  },
+
+  "cream_void": {
+    "subtitle": "Something erased by the Void",
+    "sounds": [ "rotp_cream:stand/cream_void1", "rotp_cream:stand/cream_void2", "rotp_cream:stand/cream_void3" ]
+  },
+
+  "cream_entity_void": {
+    "subtitle": "Someone erased by the Void",
+    "sounds": [ "rotp_cream:stand/cream_delete" ]
+  },
+
+  "cream_chop": {
+    "subtitle": "Chop",
+    "sounds": [ "rotp_cream:stand/cream_chop" ]
+  },
+
+  "cream_skullcrush": {
+    "subtitle": "Skull Crush",
+    "sounds": [ "rotp_cream:stand/cream_skullcrush" ]
+  },
+
+  "cream_claw": {
+    "subtitle": "Clawing",
+    "sounds": [ "rotp_cream:stand/cream_clawhit", "rotp_cream:stand/cream_clawhit2", "rotp_cream:stand/cream_clawhit3", "rotp_cream:stand/cream_clawhit4", "rotp_cream:stand/cream_clawhit5" ]
+  },
+
+  "cream_heavy_claw": {
+    "subtitle": "Heavy Clawing",
+    "sounds": [ "rotp_cream:stand/cream_heavy_claw" ]
+  },
+
+  "cream_chomp": {
+    "subtitle": "Cream biting someone",
+    "sounds": [ "rotp_cream:stand/cream_chomp" ]
+  },
+
+  "cream_void_start": {
+    "subtitle": "Void Start",
+    "sounds": [ "rotp_cream:stand/cream_void_start" ]
+  },
+
+  "cream_void_end": {
+    "subtitle": "Void End",
+    "sounds": [ "rotp_cream:stand/cream_void_end" ]
+  },
+
+  "vanilla_ice_cream": {
+    "subtitle": "Cream!",
+    "sounds": [ "rotp_cream:stand_user/vanilla_ice_cream" ]
+  }
+}

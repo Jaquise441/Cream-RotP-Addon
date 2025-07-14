@@ -1,0 +1,21 @@
+{
+  "required": true,
+  "minVersion": "0.7",
+  "package": "com.hello_there.rotp_cream.mixin",
+  "refmap": "mixins.RotP-Cream.refmap.json",
+  "compatibilityLevel": "JAVA_8",
+  "mixins": [
+  ],
+  "client": [
+    "SoundMuterMixin",
+    "SemiVoidUserDamageMixin",
+    "UserCheckerMixin",
+    "VoidBarrierCleanupMixin",
+    "VoidedCleanupMixin",
+    "DimensionChangeMixin",
+    "PlayerLogoutMixin"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}
