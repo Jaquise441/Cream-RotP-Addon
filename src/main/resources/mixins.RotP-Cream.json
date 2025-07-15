@@ -13,7 +13,8 @@
     "VoidBarrierCleanupMixin",
     "VoidedCleanupMixin",
     "DimensionChangeMixin",
-    "PlayerLogoutMixin"
+    "PlayerLogoutMixin",
+    "SpectatorMixin"
   ],
   "injectors": {
     "defaultRequire": 1
