@@ -17,6 +17,7 @@ import com.hello_there.rotp_cream.init.InitBlocks;
 import com.hello_there.rotp_cream.init.InitEffects;
 import com.hello_there.rotp_cream.init.InitStands;
 import com.hello_there.rotp_cream.init.InitSounds;
+import com.hello_there.rotp_cream.util.BlacklistHandler;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
 import net.minecraft.client.Minecraft;
@@ -55,7 +56,6 @@ public class CreamVoidBall extends StandEntityAction {
     private static final Set<UUID> activeBalls = new HashSet<>();
     private static final Map<UUID,Integer> mapActiveTicks = new HashMap<>();
     public static final StandPose VOID_BALL = new StandPose("cream_void_ball");
-    private final Set<BlockPos> barrierPositions = new HashSet<>();
     private final Map<Entity, Boolean> teleportedEntities = new HashMap<>();
     private static final int GET_FUCKED_LMAO = -9999;
     private static final Set<net.minecraft.block.Block> GRASSY_BLOCKS = new HashSet<net.minecraft.block.Block>() {{
@@ -160,8 +160,12 @@ public class CreamVoidBall extends StandEntityAction {
             }
         }
 
+        boolean isVampire = INonStandPower.getNonStandPowerOptional(userPower.getUser())
+                .map(power -> power.getType() == ModPowers.VAMPIRISM.get())
+                .orElse(false);
 
-        float staminaCostPerTick = getStaminaCostPerTick(userPower);
+        float staminaCostPerTick = isVampire ? getStaminaCostPerTickVamp(userPower) : getStaminaCostPerTick(userPower);
+
         if (staminaCostPerTick > 0 && !userPower.consumeStamina(staminaCostPerTick)) {
             userPower.stopHeldAction(false);
             return;
@@ -195,7 +199,7 @@ public class CreamVoidBall extends StandEntityAction {
 
         world.getEntitiesOfClass(Entity.class, voidArea).forEach(entity -> {
             if (entity != user && entity != standEntity && !teleportedEntities.containsKey(entity) &&
-                    (!(entity instanceof PlayerEntity) || !((PlayerEntity) entity).abilities.invulnerable)) {
+                    (!(entity instanceof PlayerEntity) || !((PlayerEntity) entity).abilities.invulnerable) && !BlacklistHandler.isEntityBlacklisted(entity)) {
 
                 if (entity instanceof PlayerEntity) {
                     PlayerEntity playerEntity = (PlayerEntity) entity;
@@ -275,14 +279,7 @@ public class CreamVoidBall extends StandEntityAction {
     }
 
     private boolean blacklist(BlockState state) {
-        return state.getBlock() == Blocks.BEDROCK ||
-                state.getBlock() == Blocks.BARRIER ||
-                state.getBlock() == InitBlocks.VOID_BARRIER.get() ||
-                state.getBlock() == Blocks.COMMAND_BLOCK ||
-                state.getBlock() == Blocks.END_PORTAL ||
-                state.getBlock() == Blocks.END_PORTAL_FRAME ||
-                state.getBlock() == Blocks.NETHER_PORTAL ||
-                state.getBlock() == Blocks.END_GATEWAY;
+        return BlacklistHandler.isBlockBlacklisted(state.getBlock());
     }
 
     @Override
@@ -293,6 +290,11 @@ public class CreamVoidBall extends StandEntityAction {
         if (activeBalls.contains(user.getUUID())) {
             if (!user.level.isClientSide) {
                 int cooldownTicks = 0;
+
+                Integer ticksUsed = mapActiveTicks.remove(user.getUUID());
+                if (ticksUsed == null) {
+                    ticksUsed = 0;
+                }
 
                 if (user instanceof PlayerEntity && ((PlayerEntity) user).isCreative()) {
                     cooldownTicks = 0;
@@ -307,12 +309,12 @@ public class CreamVoidBall extends StandEntityAction {
                             cooldownTicks = CreamConfig.VOIDBALL_VAMPIRE_COOLDOWN.get();
                         }
                         else {
-                            cooldownTicks = (int) (mapActiveTicks.get(userPower.getUser().getUUID()) * CreamConfig.VOIDBALL_VAMPIRE_COOLDOWN_MULTIPLIER.get());
+                            cooldownTicks = (int) (ticksUsed * CreamConfig.VOIDBALL_VAMPIRE_COOLDOWN_MULTIPLIER.get());
                             cooldownTicks = Math.max(cooldownTicks, CreamConfig.VOIDBALL_VAMPIRE_MIN_COOLDOWN.get());
                         }
                     } else {
                         if (CreamConfig.VOIDBALL_DYNAMIC_COOLDOWN.get()) {
-                            cooldownTicks = (int)(mapActiveTicks.get(userPower.getUser().getUUID()) * CreamConfig.VOIDBALL_DYNAMIC_COOLDOWN_MULTIPLIER.get());
+                            cooldownTicks = (int)(ticksUsed * CreamConfig.VOIDBALL_DYNAMIC_COOLDOWN_MULTIPLIER.get());
                             cooldownTicks = Math.max(cooldownTicks, CreamConfig.VOIDBALL_DYNAMIC_MINIMUM_COOLDOWN.get());
                         } else {
                             cooldownTicks = CreamConfig.VOIDBALL_COOLDOWN.get();
@@ -333,20 +335,10 @@ public class CreamVoidBall extends StandEntityAction {
             }
         }
 
-        if (user instanceof PlayerEntity && !((PlayerEntity) user).isCreative()) {
-            PlayerEntity player = (PlayerEntity) user;
-            player.abilities.mayfly = false;
-            player.abilities.flying = false;
-            player.onUpdateAbilities();
-        }
-
         activeBalls.remove(user.getUUID());
-
         user.removeEffect(InitEffects.VOIDED.get());
         standEntity.removeEffect(ModStatusEffects.FULL_INVISIBILITY.get());
 
-        barrierPositions.forEach(pos -> world.setBlock(pos, Blocks.AIR.defaultBlockState(), 3));
-        barrierPositions.clear();
         teleportedEntities.clear();
     }
 
@@ -362,6 +354,21 @@ public class CreamVoidBall extends StandEntityAction {
             return CreamConfig.STAMINA_COST_RESOLVE_3.get().floatValue();
         } else {
             return CreamConfig.STAMINA_COST_RESOLVE_4.get().floatValue();
+        }
+    }
+
+    private float getStaminaCostPerTickVamp(IStandPower power) {
+        if (!CreamConfig.PROGRESSIVE_STAMINA_COST.get()) {
+            return CreamConfig.VOIDBALL_STAMINA_COST_TICK_VAMPIRE.get().floatValue();
+        }
+
+        int resolveLevel = power.getResolveLevel();
+        if (resolveLevel <= 2) {
+            return CreamConfig.STAMINA_COST_RESOLVE_2_VAMPIRE.get().floatValue();
+        } else if (resolveLevel == 3) {
+            return CreamConfig.STAMINA_COST_RESOLVE_3_VAMPIRE.get().floatValue();
+        } else {
+            return CreamConfig.STAMINA_COST_RESOLVE_4_VAMPIRE.get().floatValue();
         }
     }
 

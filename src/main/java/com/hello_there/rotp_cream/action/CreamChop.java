@@ -18,6 +18,7 @@ import com.hello_there.rotp_cream.init.InitSounds;
 import com.hello_there.rotp_cream.init.InitStands;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.LivingEntity;
+import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.potion.EffectInstance;
 import net.minecraft.potion.Effects;
@@ -36,7 +37,10 @@ public class CreamChop extends StandEntityLightAttack {
 
     @Override
     public int getStandWindupTicks(IStandPower standPower, StandEntity standEntity) {
-        standPower.setCooldownTimer(this, CreamConfig.CHOP_COOLDOWN.get());
+        LivingEntity user = standEntity.getUser();
+        if (!((PlayerEntity) user).isCreative()) {
+            standPower.setCooldownTimer(this, CreamConfig.CHOP_COOLDOWN.get());
+        }
         return 8;
     }
 
@@ -47,10 +51,6 @@ public class CreamChop extends StandEntityLightAttack {
 
     @Override
     public ActionConditionResult checkConditions(LivingEntity user, IStandPower power, ActionTarget target) {
-        if (this == InitStands.CREAM_VOID_BALL_CANCEL.get()) {
-            return super.checkConditions(user, power, target);
-        }
-
         if (isVoidBallActive(user, power)) {
             return ActionConditionResult.NEGATIVE;
         }

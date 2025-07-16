@@ -9,6 +9,7 @@ import com.github.standobyte.jojo.power.impl.stand.IStandPower;
 import com.hello_there.rotp_cream.config.CreamConfig;
 import com.hello_there.rotp_cream.init.InitStands;
 import net.minecraft.entity.LivingEntity;
+import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.util.Hand;
 import net.minecraft.util.text.ITextComponent;
@@ -25,10 +26,6 @@ public class CreamEatItemStack extends StandEntityAction {
 
     @Override
     protected ActionConditionResult checkSpecificConditions(LivingEntity user, IStandPower power, ActionTarget target) {
-        if (this == InitStands.CREAM_VOID_BALL_CANCEL.get()) {
-            return super.checkConditions(user, power, target);
-        }
-
         if (isVoidBallActive(user, power)) {
             return ActionConditionResult.NEGATIVE;
         }
@@ -54,6 +51,9 @@ public class CreamEatItemStack extends StandEntityAction {
 
     @Override
     public void onTaskStopped(World world, StandEntity standEntity, IStandPower userPower, StandEntityTask task, StandEntityAction newAction) {
-        userPower.setCooldownTimer(this, CreamConfig.EAT_ITEM_STACK_COOLDOWN.get());
+        LivingEntity user = standEntity.getUser();
+        if (!((PlayerEntity) user).isCreative()) {
+            userPower.setCooldownTimer(this, CreamConfig.EAT_ITEM_STACK_COOLDOWN.get());
+        }
     }
 }

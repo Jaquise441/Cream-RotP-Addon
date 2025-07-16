@@ -9,6 +9,8 @@ import com.github.standobyte.jojo.entity.stand.StandEntity;
 import com.github.standobyte.jojo.entity.stand.StandEntityTask;
 import com.github.standobyte.jojo.entity.stand.StandPose;
 import com.github.standobyte.jojo.init.ModStatusEffects;
+import com.github.standobyte.jojo.init.power.non_stand.ModPowers;
+import com.github.standobyte.jojo.power.impl.nonstand.INonStandPower;
 import com.github.standobyte.jojo.power.impl.stand.IStandPower;
 import com.hello_there.rotp_cream.config.CreamConfig;
 import com.hello_there.rotp_cream.entity.CreamEntity;
@@ -140,9 +142,15 @@ public class CreamSemiVoidState extends StandEntityAction {
             return;
         }
 
-        float staminaCostPerTick = getStaminaCostPerTick(userPower);
+        boolean isVampire = INonStandPower.getNonStandPowerOptional(userPower.getUser())
+                .map(power -> power.getType() == ModPowers.VAMPIRISM.get())
+                .orElse(false);
+
+        float staminaCostPerTick = isVampire ? getStaminaCostPerTickVamp(userPower) : getStaminaCostPerTick(userPower);
+
         if (staminaCostPerTick > 0 && !userPower.consumeStamina(staminaCostPerTick)) {
             userPower.stopHeldAction(false);
+            return;
         }
     }
 
@@ -153,19 +161,47 @@ public class CreamSemiVoidState extends StandEntityAction {
 
         if (semiVoidActives.contains(user.getUUID())) {
             if (!user.level.isClientSide) {
-                int cooldownTicks;
-                if (CreamConfig.SEMIVOID_DYNAMIC_COOLDOWN.get()) {
-                    cooldownTicks = (int) (activeTicksMap.get(user.getUUID()) * CreamConfig.SEMIVOID_DYNAMIC_COOLDOWN_MULTIPLIER.get());
-                    cooldownTicks = Math.max(cooldownTicks, CreamConfig.SEMIVOID_DYNAMIC_MINIMUM_COOLDOWN.get());
-                } else {
-                    cooldownTicks = CreamConfig.SEMIVOID_COOLDOWN.get();
+                int cooldownTicks = 0;
+
+                Integer ticksUsed = activeTicksMap.remove(user.getUUID());
+                if (ticksUsed == null) {
+                    ticksUsed = 0;
                 }
-                userPower.setCooldownTimer(this, cooldownTicks);
+
+                if (user instanceof PlayerEntity && ((PlayerEntity) user).isCreative()) {
+                    cooldownTicks = 0;
+                }
+                else {
+                    boolean isVampire = INonStandPower.getNonStandPowerOptional(user)
+                            .map(power -> power.getType() == ModPowers.VAMPIRISM.get())
+                            .orElse(false);
+
+                    if (isVampire) {
+                        if (!CreamConfig.SEMIVOID_DYNAMIC_COOLDOWN.get()) {
+                            cooldownTicks = CreamConfig.SEMIVOID_VAMPIRE_COOLDOWN.get();
+                        }
+                        else {
+                            cooldownTicks = (int) (ticksUsed * CreamConfig.SEMIVOID_VAMPIRE_COOLDOWN_MULTIPLIER.get());
+                            cooldownTicks = Math.max(cooldownTicks, CreamConfig.SEMIVOID_VAMPIRE_MIN_COOLDOWN.get());
+                        }
+                    }
+                    else {
+                        if (CreamConfig.SEMIVOID_DYNAMIC_COOLDOWN.get()) {
+                            cooldownTicks = (int) (ticksUsed * CreamConfig.SEMIVOID_DYNAMIC_COOLDOWN_MULTIPLIER.get());
+                            cooldownTicks = Math.max(cooldownTicks, CreamConfig.SEMIVOID_DYNAMIC_MINIMUM_COOLDOWN.get());
+                        } else {
+                            cooldownTicks = CreamConfig.SEMIVOID_COOLDOWN.get();
+                        }
+                    }
+                }
+
+                if (cooldownTicks > 0) {
+                    userPower.setCooldownTimer(this, cooldownTicks);
+                }
             }
         }
 
         semiVoidActives.remove(user.getUUID());
-
         user.removeEffect(ModStatusEffects.FULL_INVISIBILITY.get());
         user.removeEffect(Effects.INVISIBILITY);
 
@@ -206,6 +242,21 @@ public class CreamSemiVoidState extends StandEntityAction {
             return CreamConfig.STAMINA_COST_RESOLVE_3.get().floatValue();
         } else {
             return CreamConfig.STAMINA_COST_RESOLVE_4.get().floatValue();
+        }
+    }
+
+    private float getStaminaCostPerTickVamp(IStandPower power) {
+        if (!CreamConfig.PROGRESSIVE_STAMINA_COST.get()) {
+            return CreamConfig.SEMIVOID_STAMINA_COST_TICK_VAMPIRE.get().floatValue();
+        }
+
+        int resolveLevel = power.getResolveLevel();
+        if (resolveLevel <= 2) {
+            return CreamConfig.STAMINA_COST_RESOLVE_2_VAMPIRE.get().floatValue();
+        } else if (resolveLevel == 3) {
+            return CreamConfig.STAMINA_COST_RESOLVE_3_VAMPIRE.get().floatValue();
+        } else {
+            return CreamConfig.STAMINA_COST_RESOLVE_4_VAMPIRE.get().floatValue();
         }
     }
 

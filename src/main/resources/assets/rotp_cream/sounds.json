@@ -60,12 +60,12 @@
   },
 
   "cream_void_start": {
-    "subtitle": "Void Start",
+    "subtitle": "Entering the Void",
     "sounds": [ "rotp_cream:stand/cream_void_start" ]
   },
 
   "cream_void_end": {
-    "subtitle": "Void End",
+    "subtitle": "Exiting the Void",
     "sounds": [ "rotp_cream:stand/cream_void_end" ]
   },
 

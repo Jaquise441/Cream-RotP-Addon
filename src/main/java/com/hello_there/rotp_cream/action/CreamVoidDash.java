@@ -13,6 +13,7 @@ import com.hello_there.rotp_cream.init.InitBlocks;
 import com.hello_there.rotp_cream.init.InitEffects;
 import com.hello_there.rotp_cream.init.InitStands;
 import com.hello_there.rotp_cream.init.InitSounds;
+import com.hello_there.rotp_cream.util.BlacklistHandler;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
@@ -124,13 +125,7 @@ public class CreamVoidDash extends StandEntityAction {
     }
 
     private boolean blacklisted(BlockState state) {
-        return state.getBlock() == Blocks.BEDROCK ||
-                state.getBlock() == Blocks.BARRIER ||
-                state.getBlock() == Blocks.COMMAND_BLOCK ||
-                state.getBlock() == Blocks.END_PORTAL ||
-                state.getBlock() == Blocks.END_PORTAL_FRAME ||
-                state.getBlock() == Blocks.NETHER_PORTAL ||
-                state.getBlock() == Blocks.END_GATEWAY;
+        return BlacklistHandler.isBlockBlacklisted(state.getBlock());
     }
 
     private void voidStuff(World world, LivingEntity user) {
@@ -145,7 +140,8 @@ public class CreamVoidDash extends StandEntityAction {
 
         for (Entity entity : world.getEntitiesOfClass(Entity.class, voidArea)) {
             if (entity == user || entity == standEntity ||
-                    entity.isInvulnerable() || teleportedEntities.contains(entity.getUUID())) {
+                    entity.isInvulnerable() || teleportedEntities.contains(entity.getUUID()) ||
+                    BlacklistHandler.isEntityBlacklisted(entity)) {
                 continue;
             }
 
@@ -224,8 +220,7 @@ public class CreamVoidDash extends StandEntityAction {
         CreamVoidBall.removeBallActive(user);
         playSound((PlayerEntity) user, InitSounds.CREAM_VOID_END.get(), false);
 
-        if (!world.isClientSide) {
-            user.setNoGravity(false);
+        if (!world.isClientSide && !((PlayerEntity) user).isCreative()) {
             userPower.setCooldownTimer(this, CreamConfig.VOIDDASH_COOLDOWN.get());
             userPower.setCooldownTimer(InitStands.CREAM_VOID_BALL.get(), CreamConfig.VOIDDASH_COOLDOWN.get());
         }

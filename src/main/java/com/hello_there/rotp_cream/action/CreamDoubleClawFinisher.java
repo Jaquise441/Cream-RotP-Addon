@@ -29,10 +29,6 @@ public class CreamDoubleClawFinisher extends StandEntityHeavyAttack {
 
     @Override
     public ActionConditionResult checkConditions(LivingEntity user, IStandPower power, ActionTarget target) {
-        if (this == InitStands.CREAM_VOID_BALL_CANCEL.get()) {
-            return super.checkConditions(user, power, target);
-        }
-
         if (isVoidBallActive(user, power)) {
             return ActionConditionResult.NEGATIVE;
         }

@@ -1,4 +1,4 @@
-{
+  {
   "entity.rotp_cream.cream": "Cream",
   "stand.rotp_cream.cream": "Cream",
   "action.rotp_cream.cream_punch": "Punch",
@@ -15,8 +15,10 @@
   "action.rotp_cream.cream_eat_item": "Eat Item",
   "action.rotp_cream.cream_eat_item_stack": "Eat Item Stack",
   "action.rotp_cream.cream_block": "Block",
-  "action.rotp_cream.cream_chomp": "Chomp",
+  "action.rotp_cream.cream_chomp.chompy": "Devour %s",
+  "action.rotp_cream.cream_chomp.no_chompy": "Devour",
   "action.rotp_cream.cream_chop": "Chop",
+
 
   "jojo.message.action_condition.no_item_in_offhand_cream": "You need something to hold in your off-hand for Cream to eat it.",
   "jojo.message.action_condition.no_target_chomp": "The entity is too far away for Cream to chomp on.",

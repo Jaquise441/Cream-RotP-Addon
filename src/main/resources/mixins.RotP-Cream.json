@@ -10,7 +10,6 @@
     "SoundMuterMixin",
     "SemiVoidUserDamageMixin",
     "UserCheckerMixin",
-    "VoidBarrierCleanupMixin",
     "VoidedCleanupMixin",
     "DimensionChangeMixin",
     "PlayerLogoutMixin",
