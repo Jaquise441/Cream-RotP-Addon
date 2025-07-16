@@ -37,12 +37,12 @@ import javax.annotation.Nullable;
 import java.util.*;
 
 public class CreamVoidDash extends StandEntityAction {
-    private static final Map<LivingEntity, CreamVoidDash> ACTIVE_INSTANCES = new WeakHashMap<>();
+    private static final Set<UUID> DASHES = new HashSet<>();
     private static final double SEARCH_RADIUS = 1.5;
     private static final int GET_FUCKED_LMAO = -9999;
     private final Set<UUID> teleportedEntities = new HashSet<>();
     private Vector3d dashDirection;
-    private boolean playedDashSound = false;
+    private static final Set<UUID> setPlayedDashSound = new HashSet<>();
 
     public CreamVoidDash(StandEntityAction.Builder builder) {
         super(builder);
@@ -62,7 +62,8 @@ public class CreamVoidDash extends StandEntityAction {
         if (user == null || world.isClientSide) return;
 
         this.dashDirection = user.getLookAngle().normalize();
-        ACTIVE_INSTANCES.put(user, this);
+
+        DASHES.add(user.getUUID());
         teleportedEntities.clear();
 
         playSound((PlayerEntity) user, InitSounds.CREAM_VOID_START.get(), false);
@@ -79,6 +80,7 @@ public class CreamVoidDash extends StandEntityAction {
         BlockPos centerPos = user.blockPosition();
         BlockPos barrierCenter = centerPos.below(1);
 
+        /*
         Set<BlockPos> currentBarrierPositions = new HashSet<>();
         for (int dx = -1; dx <= 1; dx++) {
             for (int dz = -1; dz <= 1; dz++) {
@@ -89,27 +91,26 @@ public class CreamVoidDash extends StandEntityAction {
                 }
             }
         }
+         */
 
-        if (!((PlayerEntity) user).isCreative()) {
-            Vector3d lookVec = user.getLookAngle();
-            Vector3d horizontalLook = new Vector3d(lookVec.x, 0, lookVec.z).normalize();
-            double speed = 5;
-            Vector3d movement = horizontalLook.scale(speed);
+        Vector3d lookVec = user.getLookAngle();
+        Vector3d horizontalLook = new Vector3d(lookVec.x, 0, lookVec.z).normalize();
+        double speed = 5;
+        Vector3d movement = horizontalLook.scale(speed);
 
-            user.setDeltaMovement(movement.x, user.getDeltaMovement().y, movement.z);
-            user.hasImpulse = true;
 
-            if (user.isShiftKeyDown()) {
-                user.setShiftKeyDown(false);
-                user.setPos(user.getX(), user.getY() + 0.1, user.getZ());
-            }
+        user.setDeltaMovement(movement.x, user.getDeltaMovement().y, movement.z);
+        user.hasImpulse = true;
+
+        if (user.isShiftKeyDown()) {
+            user.setShiftKeyDown(false);
+            user.setPos(user.getX(), user.getY() + 0.1, user.getZ());
         }
-
         voidStuff(world, user);
 
-        if (!playedDashSound && user instanceof PlayerEntity) {
+        if (!setPlayedDashSound.contains(user.getUUID()) && user instanceof PlayerEntity) {
             //TODO: Get a fucking dash sound
-            playedDashSound = true;
+            setPlayedDashSound.add(user.getUUID());
         }
     }
 
@@ -173,6 +174,14 @@ public class CreamVoidDash extends StandEntityAction {
     }
 
     @Override
+    public void onTaskSet(World world, StandEntity standEntity, IStandPower standPower, Phase phase, StandEntityTask task, int ticks) {
+        super.onTaskSet(world, standEntity, standPower, phase, task, ticks);
+        if(!world.isClientSide){
+            standPower.getUser().setNoGravity(true);
+        }
+    }
+
+    @Override
     public void onTaskStopped(World world, StandEntity standEntity, IStandPower userPower, StandEntityTask task, StandEntityAction newAction) {
         LivingEntity user = standEntity.getUser();
         if (user == null || world.isClientSide) return;
@@ -180,26 +189,25 @@ public class CreamVoidDash extends StandEntityAction {
         teleportedEntities.clear();
         user.removeEffect(InitEffects.VOIDED.get());
         standEntity.removeEffect(ModStatusEffects.FULL_INVISIBILITY.get());
-
+        CreamVoidBall.removeBallActive(user);
         playSound((PlayerEntity) user, InitSounds.CREAM_VOID_END.get(), false);
 
         if (!world.isClientSide) {
+            user.setNoGravity(false);
             userPower.setCooldownTimer(this, CreamConfig.VOIDDASH_COOLDOWN.get());
             userPower.setCooldownTimer(InitStands.CREAM_VOID_BALL.get(), CreamConfig.VOIDDASH_COOLDOWN.get());
         }
 
-        ACTIVE_INSTANCES.remove(user);
+        DASHES.remove(user.getUUID());
 
-        playedDashSound = false;
+        setPlayedDashSound.remove(user.getUUID());
     }
 
     public static void cleanup(LivingEntity user) {
         if (isVoidDashActive(user)) {
-            CreamVoidDash instance = ACTIVE_INSTANCES.get(user);
-            if (instance != null) {
-                instance.playedDashSound = false;
-            }
-            ACTIVE_INSTANCES.remove(user);
+
+            setPlayedDashSound.remove(user.getUUID());
+            DASHES.remove(user.getUUID());
 
             user.removeEffect(InitEffects.VOIDED.get());
             IStandPower.getStandPowerOptional(user).ifPresent(standPower -> {
@@ -236,7 +244,7 @@ public class CreamVoidDash extends StandEntityAction {
     }
 
     public static boolean isVoidDashActive(LivingEntity user) {
-        return ACTIVE_INSTANCES.containsKey(user);
+        return DASHES.contains(user.getUUID());
     }
 
     @Override

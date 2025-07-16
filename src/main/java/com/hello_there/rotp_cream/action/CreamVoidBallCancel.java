@@ -23,6 +23,7 @@ public class CreamVoidBallCancel extends StandEntityAction {
         if (!world.isClientSide) {
             if (userPower.getHeldAction() instanceof CreamVoidBall) {
                 userPower.stopHeldAction(true);
+                CreamVoidBall.removeBallActive(userPower.getUser());
             }
         }
     }

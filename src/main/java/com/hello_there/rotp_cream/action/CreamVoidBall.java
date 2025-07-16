@@ -12,6 +12,7 @@ import com.github.standobyte.jojo.init.power.non_stand.ModPowers;
 import com.github.standobyte.jojo.power.impl.nonstand.INonStandPower;
 import com.github.standobyte.jojo.power.impl.stand.IStandPower;
 import com.hello_there.rotp_cream.config.CreamConfig;
+import com.hello_there.rotp_cream.entity.CreamEntity;
 import com.hello_there.rotp_cream.init.InitBlocks;
 import com.hello_there.rotp_cream.init.InitEffects;
 import com.hello_there.rotp_cream.init.InitStands;
@@ -50,16 +51,29 @@ import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 public class CreamVoidBall extends StandEntityAction {
-    private boolean isVoidBallActive = false;
-    private int activeTicks = 0;
+    private static final Set<UUID> activeBalls = new HashSet<>();
+    private static final Map<UUID,Integer> mapActiveTicks = new HashMap<>();
     public static final StandPose VOID_BALL = new StandPose("cream_void_ball");
-    private static final Map<LivingEntity, CreamVoidBall> ACTIVE_INSTANCES = new WeakHashMap<>();
     private final Set<BlockPos> barrierPositions = new HashSet<>();
     private final Map<Entity, Boolean> teleportedEntities = new HashMap<>();
     private static final int GET_FUCKED_LMAO = -9999;
 
     public static boolean isVoidBallActive(LivingEntity user, IStandPower power) {
-        return ACTIVE_INSTANCES.containsKey(user) && ACTIVE_INSTANCES.get(user).isVoidBallActive();
+        return isVoidBallActive(user);
+    }
+
+    @Override
+    protected Action<IStandPower> replaceAction(IStandPower power, ActionTarget target) {
+        if(power.getStandManifestation() instanceof CreamEntity){
+            CreamEntity creamEntity = (CreamEntity) power.getStandManifestation();
+            if(creamEntity.isSemiVoidActive()){
+                return InitStands.CREAM_VOID_DASH.get();
+            }
+            if(creamEntity.isBallVoidActive()){
+                return InitStands.CREAM_VOID_BALL_CANCEL.get();
+            }
+        }
+        return super.replaceAction(power, target);
     }
 
     private final Map<UUID, Integer> voidedPlayers = new HashMap<>();
@@ -76,7 +90,7 @@ public class CreamVoidBall extends StandEntityAction {
 
     @Override
     public boolean heldAllowsOtherAction(IStandPower power, Action<IStandPower> action) {
-        if (isVoidBallActive) {
+        if (activeBalls.contains(power.getUser().getUUID())) {
             return action == InitStands.CREAM_VOID_BALL_CANCEL.get();
         }
         return false;
@@ -91,13 +105,19 @@ public class CreamVoidBall extends StandEntityAction {
     }
 
     @Override
+    public void onTaskSet(World world, StandEntity standEntity, IStandPower standPower, Phase phase, StandEntityTask task, int ticks) {
+        super.onTaskSet(world, standEntity, standPower, phase, task, ticks);
+        mapActiveTicks.putIfAbsent(standPower.getUser().getUUID(),0);
+    }
+
+    @Override
     public void standPerform(World world, StandEntity standEntity, IStandPower userPower, StandEntityTask task) {
         LivingEntity user = standEntity.getUser();
         if (user == null || world.isClientSide) return;
 
-        isVoidBallActive = true;
-        ACTIVE_INSTANCES.put(standEntity.getUser(), this);
-        activeTicks = 0;
+        activeBalls.add(user.getUUID());
+        mapActiveTicks.putIfAbsent(user.getUUID(),0);
+
         userPower.setCooldownTimer(InitStands.CREAM_VOID_BALL_CANCEL.get(), 20);
 
         playSound((PlayerEntity) user, InitSounds.CREAM_VOID_START.get(), false);
@@ -115,15 +135,18 @@ public class CreamVoidBall extends StandEntityAction {
                 cancelAction.standPerform(world, standEntity, userPower, task);
                 return;
             }
-            activeTicks++;
+            mapActiveTicks.put(userPower.getUser().getUUID(),mapActiveTicks.get(userPower.getUser().getUUID())+1);
         }
 
-        if (activeTicks >= CreamConfig.VOIDBALL_DURATION.get()) {
-            CreamVoidBallCancel cancelAction = (CreamVoidBallCancel) InitStands.CREAM_VOID_BALL_CANCEL.get();
-            userPower.setHeldAction(cancelAction);
-            cancelAction.standPerform(world, standEntity, userPower, task);
-            return;
+        if(mapActiveTicks.containsKey(userPower.getUser().getUUID())){
+            if (mapActiveTicks.get(userPower.getUser().getUUID()) >= CreamConfig.VOIDBALL_DURATION.get()) {
+                CreamVoidBallCancel cancelAction = (CreamVoidBallCancel) InitStands.CREAM_VOID_BALL_CANCEL.get();
+                userPower.setHeldAction(cancelAction);
+                cancelAction.standPerform(world, standEntity, userPower, task);
+                return;
+            }
         }
+
 
         float staminaCostPerTick = getStaminaCostPerTick(userPower);
         if (staminaCostPerTick > 0 && !userPower.consumeStamina(staminaCostPerTick)) {
@@ -236,7 +259,7 @@ public class CreamVoidBall extends StandEntityAction {
         LivingEntity user = standEntity.getUser();
         if (user == null || world.isClientSide) return;
 
-        if (isVoidBallActive) {
+        if (activeBalls.contains(user.getUUID())) {
             if (!user.level.isClientSide) {
                 int cooldownTicks = 0;
 
@@ -253,12 +276,12 @@ public class CreamVoidBall extends StandEntityAction {
                             cooldownTicks = CreamConfig.VOIDBALL_VAMPIRE_COOLDOWN.get();
                         }
                         else {
-                            cooldownTicks = (int) (activeTicks * CreamConfig.VOIDBALL_VAMPIRE_COOLDOWN_MULTIPLIER.get());
+                            cooldownTicks = (int) (mapActiveTicks.get(userPower.getUser().getUUID()) * CreamConfig.VOIDBALL_VAMPIRE_COOLDOWN_MULTIPLIER.get());
                             cooldownTicks = Math.max(cooldownTicks, CreamConfig.VOIDBALL_VAMPIRE_MIN_COOLDOWN.get());
                         }
                     } else {
                         if (CreamConfig.VOIDBALL_DYNAMIC_COOLDOWN.get()) {
-                            cooldownTicks = (int)(activeTicks * CreamConfig.VOIDBALL_DYNAMIC_COOLDOWN_MULTIPLIER.get());
+                            cooldownTicks = (int)(mapActiveTicks.get(userPower.getUser().getUUID()) * CreamConfig.VOIDBALL_DYNAMIC_COOLDOWN_MULTIPLIER.get());
                             cooldownTicks = Math.max(cooldownTicks, CreamConfig.VOIDBALL_DYNAMIC_MINIMUM_COOLDOWN.get());
                         } else {
                             cooldownTicks = CreamConfig.VOIDBALL_COOLDOWN.get();
@@ -279,8 +302,7 @@ public class CreamVoidBall extends StandEntityAction {
             }
         }
 
-        isVoidBallActive = false;
-        ACTIVE_INSTANCES.remove(user);
+        activeBalls.remove(user.getUUID());
 
         user.removeEffect(InitEffects.VOIDED.get());
         standEntity.removeEffect(ModStatusEffects.FULL_INVISIBILITY.get());
@@ -307,12 +329,6 @@ public class CreamVoidBall extends StandEntityAction {
 
     public static void cleanup(LivingEntity user) {
         if (isVoidBallActive(user, null)) {
-            CreamVoidBall instance = ACTIVE_INSTANCES.get(user);
-            if (instance != null) {
-                instance.isVoidBallActive = false;
-            }
-            ACTIVE_INSTANCES.remove(user);
-
             user.removeEffect(InitEffects.VOIDED.get());
             IStandPower.getStandPowerOptional(user).ifPresent(standPower -> {
                 if (standPower.hasPower()) {
@@ -341,21 +357,8 @@ public class CreamVoidBall extends StandEntityAction {
         }
     }
 
-    @Nullable
-    @Override
-    public Action<IStandPower> getVisibleAction(IStandPower power, ActionTarget target) {
-        LivingEntity user = power.getUser();
 
-        if (user != null && CreamSemiVoidState.isSemiVoidActive(user)) {
-            return InitStands.CREAM_VOID_DASH.get();
-        }
 
-        if (isVoidBallActive()) {
-            return InitStands.CREAM_VOID_BALL_CANCEL.get();
-        }
-
-        return super.getVisibleAction(power, target);
-    }
 
     private static void playSound(PlayerEntity player, SoundEvent sound, boolean forCreamUserOnly) {
         if (player instanceof ServerPlayerEntity) {
@@ -379,13 +382,14 @@ public class CreamVoidBall extends StandEntityAction {
     }
 
     public static boolean isVoidBallActive(LivingEntity user) {
-        return ACTIVE_INSTANCES.containsKey(user) && ACTIVE_INSTANCES.get(user).isVoidBallActive();
+        return activeBalls.contains(user.getUUID());
     }
 
 
-    public boolean isVoidBallActive() {
-        return isVoidBallActive;
+    public static void removeBallActive(LivingEntity user){
+        activeBalls.remove(user.getUUID());
     }
+
 
     @Mod.EventBusSubscriber
     public static class VoidBallEvents {

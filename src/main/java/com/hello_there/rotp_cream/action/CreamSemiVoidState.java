@@ -3,6 +3,7 @@ package com.hello_there.rotp_cream.action;
 import com.github.standobyte.jojo.action.Action;
 import com.github.standobyte.jojo.action.ActionConditionResult;
 import com.github.standobyte.jojo.action.ActionTarget;
+import com.github.standobyte.jojo.action.non_stand.HamonSunlightYellowOverdrive;
 import com.github.standobyte.jojo.action.stand.StandEntityAction;
 import com.github.standobyte.jojo.entity.stand.StandEntity;
 import com.github.standobyte.jojo.entity.stand.StandEntityTask;
@@ -10,6 +11,7 @@ import com.github.standobyte.jojo.entity.stand.StandPose;
 import com.github.standobyte.jojo.init.ModStatusEffects;
 import com.github.standobyte.jojo.power.impl.stand.IStandPower;
 import com.hello_there.rotp_cream.config.CreamConfig;
+import com.hello_there.rotp_cream.entity.CreamEntity;
 import com.hello_there.rotp_cream.init.InitEffects;
 import com.hello_there.rotp_cream.init.InitStands;
 import com.hello_there.rotp_cream.init.InitSounds;
@@ -17,6 +19,7 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.entity.player.ClientPlayerEntity;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.network.PacketBuffer;
 import net.minecraft.potion.EffectInstance;
 import net.minecraft.potion.Effects;
 import net.minecraft.util.DamageSource;
@@ -35,20 +38,31 @@ import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 
 import javax.annotation.Nullable;
-import java.util.Map;
-import java.util.WeakHashMap;
+import java.util.*;
 
 public class CreamSemiVoidState extends StandEntityAction {
-    private boolean isSemiVoidActive = false;
-    private static final Map<LivingEntity, CreamSemiVoidState> ACTIVE_INSTANCES = new WeakHashMap<>();
     public static final StandPose SEMI_VOID_STATE = new StandPose("cream_semi_void_state");
-    private int activeTicks = 0;
+    private static final Map<UUID,Integer> activeTicksMap = new HashMap<>();
+    private static final Set<UUID> semiVoidActives = new HashSet<>();
 
     //TODO: I genuinely gotta find a better name for this than fucking dumbass "semivoidstate" bruh
 
 
     public CreamSemiVoidState(Builder builder) {
         super(builder);
+    }
+
+
+
+    @Override
+    protected Action<IStandPower> replaceAction(IStandPower power, ActionTarget target) {
+        if(power.getStandManifestation() instanceof CreamEntity){
+            CreamEntity creamEntity = (CreamEntity) power.getStandManifestation();
+            if(creamEntity.isSemiVoidActive()){
+                return InitStands.CREAM_SEMI_VOID_STATE_CANCEL.get();
+            }
+        }
+        return super.replaceAction(power, target);
     }
 
 
@@ -65,13 +79,16 @@ public class CreamSemiVoidState extends StandEntityAction {
         return super.checkStandConditions(stand, power, target);
     }
 
+
+
     @Override
     public void standPerform(World world, StandEntity standEntity, IStandPower userPower, StandEntityTask task) {
         LivingEntity user = standEntity.getUser();
         if (user == null || world.isClientSide) return;
-        activeTicks = 0;
-        isSemiVoidActive = true;
-        ACTIVE_INSTANCES.put(user, this);
+        activeTicksMap.putIfAbsent(userPower.getUser().getUUID(),0);
+
+
+        semiVoidActives.add(user.getUUID());
 
         userPower.setCooldownTimer(InitStands.CREAM_SEMI_VOID_STATE_CANCEL.get(), 20);
 
@@ -85,6 +102,9 @@ public class CreamSemiVoidState extends StandEntityAction {
         }
     }
 
+
+
+
     @Override
     public void standTickPerform(World world, StandEntity standEntity, IStandPower userPower, StandEntityTask task) {
         LivingEntity user = standEntity.getUser();
@@ -97,10 +117,10 @@ public class CreamSemiVoidState extends StandEntityAction {
                 cancelAction.standPerform(world, standEntity, userPower, task);
                 return;
             }
-            activeTicks++;
+            activeTicksMap.put(user.getUUID(),activeTicksMap.get(user.getUUID())+1);
         }
 
-        if (activeTicks >= CreamConfig.SEMIVOID_DURATION.get()) {
+        if (activeTicksMap.get(user.getUUID()) >= CreamConfig.SEMIVOID_DURATION.get()) {
             CreamSemiVoidStateCancel cancelAction = (CreamSemiVoidStateCancel) InitStands.CREAM_SEMI_VOID_STATE_CANCEL.get();
             userPower.setHeldAction(cancelAction);
             cancelAction.standPerform(world, standEntity, userPower, task);
@@ -131,11 +151,11 @@ public class CreamSemiVoidState extends StandEntityAction {
         LivingEntity user = standEntity.getUser();
         if (user == null || world.isClientSide) return;
 
-        if (isSemiVoidActive) {
+        if (semiVoidActives.contains(user.getUUID())) {
             if (!user.level.isClientSide) {
                 int cooldownTicks;
                 if (CreamConfig.SEMIVOID_DYNAMIC_COOLDOWN.get()) {
-                    cooldownTicks = (int) (activeTicks * CreamConfig.SEMIVOID_DYNAMIC_COOLDOWN_MULTIPLIER.get());
+                    cooldownTicks = (int) (activeTicksMap.get(user.getUUID()) * CreamConfig.SEMIVOID_DYNAMIC_COOLDOWN_MULTIPLIER.get());
                     cooldownTicks = Math.max(cooldownTicks, CreamConfig.SEMIVOID_DYNAMIC_MINIMUM_COOLDOWN.get());
                 } else {
                     cooldownTicks = CreamConfig.SEMIVOID_COOLDOWN.get();
@@ -144,8 +164,7 @@ public class CreamSemiVoidState extends StandEntityAction {
             }
         }
 
-        isSemiVoidActive = false;
-        ACTIVE_INSTANCES.remove(user);
+        semiVoidActives.remove(user.getUUID());
 
         user.removeEffect(ModStatusEffects.FULL_INVISIBILITY.get());
         user.removeEffect(Effects.INVISIBILITY);
@@ -160,11 +179,8 @@ public class CreamSemiVoidState extends StandEntityAction {
 
     public static void cleanup(LivingEntity user) {
         if (isSemiVoidActive(user)) {
-            CreamSemiVoidState instance = ACTIVE_INSTANCES.get(user);
-            if (instance != null) {
-                instance.isSemiVoidActive = false;
-            }
-            ACTIVE_INSTANCES.remove(user);
+
+            semiVoidActives.remove(user.getUUID());
 
             user.removeEffect(ModStatusEffects.FULL_INVISIBILITY.get());
             user.removeEffect(Effects.INVISIBILITY);
@@ -199,22 +215,15 @@ public class CreamSemiVoidState extends StandEntityAction {
                 || action == InitStands.CREAM_VOID_DASH.get();
     }
 
-    @Nullable
-    @Override
-    public Action<IStandPower> getVisibleAction(IStandPower power, ActionTarget target) {
-        if (isSemiVoidActive()) {
-            return InitStands.CREAM_SEMI_VOID_STATE_CANCEL.get();
-        }
-        return super.getVisibleAction(power, target);
+    public static void remoteSemiVoidActive(LivingEntity user){
+        semiVoidActives.remove(user.getUUID());
     }
+
 
     public static boolean isSemiVoidActive(LivingEntity user) {
-        return ACTIVE_INSTANCES.containsKey(user) && ACTIVE_INSTANCES.get(user).isSemiVoidActive();
+        return semiVoidActives.contains(user.getUUID());
     }
 
-    public boolean isSemiVoidActive() {
-        return isSemiVoidActive;
-    }
 
     @Mod.EventBusSubscriber
     public static class SemiVoidEvents {
