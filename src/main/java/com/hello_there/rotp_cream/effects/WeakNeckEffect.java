@@ -35,8 +35,8 @@ public class WeakNeckEffect extends UncurableEffect {
             } else {
                 if (entity.getRandom().nextFloat() < 0.05F * (amplifier + 1)) {
                     entity.hurt(DamageSource.GENERIC, 1.0F);
-                    entity.addEffect(new EffectInstance(Effects.MOVEMENT_SLOWDOWN, 100, amplifier + 1));
-                    entity.addEffect(new EffectInstance(Effects.WEAKNESS, 100, amplifier + 1));
+                    entity.addEffect(new EffectInstance(Effects.MOVEMENT_SLOWDOWN, 100, amplifier + 1, false, false));
+                    entity.addEffect(new EffectInstance(Effects.WEAKNESS, 100, amplifier + 1, false, false));
                     entity.setDeltaMovement(entity.getDeltaMovement().add(0, -0.5F, 0));
                 }
             }

@@ -14,6 +14,7 @@ import com.hello_there.rotp_cream.init.InitEffects;
 import com.hello_there.rotp_cream.init.InitStands;
 import com.hello_there.rotp_cream.init.InitSounds;
 import net.minecraft.block.Block;
+import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.LivingEntity;
@@ -43,6 +44,11 @@ public class CreamVoidDash extends StandEntityAction {
     private final Set<UUID> teleportedEntities = new HashSet<>();
     private Vector3d dashDirection;
     private static final Set<UUID> setPlayedDashSound = new HashSet<>();
+    private static final Set<net.minecraft.block.Block> GRASSY_BLOCKS = new HashSet<net.minecraft.block.Block>() {{
+        add(Blocks.GRASS_BLOCK);
+        add(Blocks.MYCELIUM);
+        add(Blocks.PODZOL);
+    }};
 
     public CreamVoidDash(StandEntityAction.Builder builder) {
         super(builder);
@@ -68,6 +74,10 @@ public class CreamVoidDash extends StandEntityAction {
 
         playSound((PlayerEntity) user, InitSounds.CREAM_VOID_START.get(), false);
 
+        PlayerEntity player = (PlayerEntity) user;
+        player.abilities.flying = true;
+        player.onUpdateAbilities();
+
         user.addEffect(new EffectInstance(InitEffects.VOIDED.get(), 20, 0, false, false));
         standEntity.addEffect(new EffectInstance(ModStatusEffects.FULL_INVISIBILITY.get(), 20, 0, false, false));
     }
@@ -76,9 +86,6 @@ public class CreamVoidDash extends StandEntityAction {
     public void standTickPerform(World world, StandEntity standEntity, IStandPower userPower, StandEntityTask task) {
         LivingEntity user = standEntity.getUser();
         if (user == null || world.isClientSide) return;
-
-        BlockPos centerPos = user.blockPosition();
-        BlockPos barrierCenter = centerPos.below(1);
 
         /*
         Set<BlockPos> currentBarrierPositions = new HashSet<>();
@@ -102,11 +109,13 @@ public class CreamVoidDash extends StandEntityAction {
         user.setDeltaMovement(movement.x, user.getDeltaMovement().y, movement.z);
         user.hasImpulse = true;
 
-        if (user.isShiftKeyDown()) {
-            user.setShiftKeyDown(false);
-            user.setPos(user.getX(), user.getY() + 0.1, user.getZ());
-        }
         voidStuff(world, user);
+
+        if (user instanceof PlayerEntity) {
+            PlayerEntity player = (PlayerEntity) user;
+            player.abilities.flying = true;
+            player.onUpdateAbilities();
+        }
 
         if (!setPlayedDashSound.contains(user.getUUID()) && user instanceof PlayerEntity) {
             //TODO: Get a fucking dash sound
@@ -114,6 +123,15 @@ public class CreamVoidDash extends StandEntityAction {
         }
     }
 
+    private boolean blacklisted(BlockState state) {
+        return state.getBlock() == Blocks.BEDROCK ||
+                state.getBlock() == Blocks.BARRIER ||
+                state.getBlock() == Blocks.COMMAND_BLOCK ||
+                state.getBlock() == Blocks.END_PORTAL ||
+                state.getBlock() == Blocks.END_PORTAL_FRAME ||
+                state.getBlock() == Blocks.NETHER_PORTAL ||
+                state.getBlock() == Blocks.END_GATEWAY;
+    }
 
     private void voidStuff(World world, LivingEntity user) {
         AxisAlignedBB voidArea = user.getBoundingBox().inflate(SEARCH_RADIUS);
@@ -151,19 +169,10 @@ public class CreamVoidDash extends StandEntityAction {
             playSound((PlayerEntity) user, InitSounds.CREAM_VOID.get(), false);
         }
 
-        BlockPos.betweenClosedStream(
-                user.blockPosition().offset(-1, -1, -1),
-                user.blockPosition().offset(1, 1, 1)
-        ).forEach(pos -> {
-            Block block = world.getBlockState(pos).getBlock();
-            if (block != Blocks.BEDROCK &&
-                    block != Blocks.END_PORTAL_FRAME &&
-                    block != Blocks.COMMAND_BLOCK &&
-                    block != Blocks.END_PORTAL &&
-                    block != Blocks.NETHER_PORTAL &&
-                    block != Blocks.END_GATEWAY &&
-                    block != InitBlocks.VOID_BARRIER.get()) {
-
+        BlockPos centerPos = new BlockPos(user.getX(), user.getEyeY() - 0.5, user.getZ());
+        BlockPos.betweenClosedStream(centerPos.offset(-1, -1, -1), centerPos.offset(1, 1, 1)).forEach(pos -> {
+            BlockState state = world.getBlockState(pos);
+            if (!blacklisted(state)) {
                 if (!world.getFluidState(pos).isEmpty()) {
                     world.setBlock(pos, Blocks.AIR.defaultBlockState(), 3);
                 } else {
@@ -171,13 +180,36 @@ public class CreamVoidDash extends StandEntityAction {
                 }
             }
         });
-    }
 
-    @Override
-    public void onTaskSet(World world, StandEntity standEntity, IStandPower standPower, Phase phase, StandEntityTask task, int ticks) {
-        super.onTaskSet(world, standEntity, standPower, phase, task, ticks);
-        if(!world.isClientSide){
-            standPower.getUser().setNoGravity(true);
+        if (user.isShiftKeyDown()) {
+            BlockPos belowCenter = user.blockPosition().below();
+
+            for (int xOffset = -1; xOffset <= 1; xOffset++) {
+                for (int zOffset = -1; zOffset <= 1; zOffset++) {
+                    BlockPos targetPos = belowCenter.offset(xOffset, 0, zOffset);
+                    BlockState state = world.getBlockState(targetPos);
+
+                    if (!blacklisted(state)) {
+                        if (!world.getFluidState(targetPos).isEmpty()) {
+                            world.setBlock(targetPos, Blocks.AIR.defaultBlockState(), 3);
+                        } else {
+                            world.destroyBlock(targetPos, false);
+                        }
+                    }
+                }
+            }
+        }
+
+        BlockPos groundCenter = user.blockPosition().below();
+        for (int xOffset = -1; xOffset <= 1; xOffset++) {
+            for (int zOffset = -1; zOffset <= 1; zOffset++) {
+                BlockPos groundPos = groundCenter.offset(xOffset, 0, zOffset);
+                BlockState groundState = world.getBlockState(groundPos);
+
+                if (GRASSY_BLOCKS.contains(groundState.getBlock())) {
+                    world.setBlock(groundPos, Blocks.DIRT.defaultBlockState(), 3);
+                }
+            }
         }
     }
 
@@ -201,6 +233,13 @@ public class CreamVoidDash extends StandEntityAction {
         DASHES.remove(user.getUUID());
 
         setPlayedDashSound.remove(user.getUUID());
+
+        if (user instanceof PlayerEntity && !((PlayerEntity) user).isCreative()) {
+            PlayerEntity player = (PlayerEntity) user;
+            player.abilities.mayfly = false;
+            player.abilities.flying = false;
+            player.onUpdateAbilities();
+        }
     }
 
     public static void cleanup(LivingEntity user) {
@@ -220,6 +259,13 @@ public class CreamVoidDash extends StandEntityAction {
             });
             if (user instanceof PlayerEntity) {
                 playSound((PlayerEntity) user, InitSounds.CREAM_VOID_END.get(), false);
+            }
+
+            if (user instanceof PlayerEntity && !((PlayerEntity) user).isCreative()) {
+                PlayerEntity player = (PlayerEntity) user;
+                player.abilities.mayfly = false;
+                player.abilities.flying = false;
+                player.onUpdateAbilities();
             }
         }
     }

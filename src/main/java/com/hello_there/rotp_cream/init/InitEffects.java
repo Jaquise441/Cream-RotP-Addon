@@ -1,10 +1,7 @@
 package com.hello_there.rotp_cream.init;
 
 import com.hello_there.rotp_cream.RotpCreamAddon;
-import com.hello_there.rotp_cream.effects.BleedingEffect;
-import com.hello_there.rotp_cream.effects.TrueBlindnessEffect;
-import com.hello_there.rotp_cream.effects.VoidedEffect;
-import com.hello_there.rotp_cream.effects.WeakNeckEffect;
+import com.hello_there.rotp_cream.effects.*;
 import net.minecraft.potion.Effect;
 import net.minecraftforge.fml.RegistryObject;
 import net.minecraftforge.registries.DeferredRegister;
@@ -29,4 +26,5 @@ public class InitEffects {
 
     public static final RegistryObject<Effect> VOIDED = EFFECTS.register("voided",
             () -> new VoidedEffect(0x000000));
+
 }

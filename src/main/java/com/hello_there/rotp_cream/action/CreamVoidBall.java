@@ -17,6 +17,7 @@ import com.hello_there.rotp_cream.init.InitBlocks;
 import com.hello_there.rotp_cream.init.InitEffects;
 import com.hello_there.rotp_cream.init.InitStands;
 import com.hello_there.rotp_cream.init.InitSounds;
+import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
 import net.minecraft.client.Minecraft;
 import net.minecraft.entity.Entity;
@@ -57,6 +58,11 @@ public class CreamVoidBall extends StandEntityAction {
     private final Set<BlockPos> barrierPositions = new HashSet<>();
     private final Map<Entity, Boolean> teleportedEntities = new HashMap<>();
     private static final int GET_FUCKED_LMAO = -9999;
+    private static final Set<net.minecraft.block.Block> GRASSY_BLOCKS = new HashSet<net.minecraft.block.Block>() {{
+        add(Blocks.GRASS_BLOCK);
+        add(Blocks.MYCELIUM);
+        add(Blocks.PODZOL);
+    }};
 
     public static boolean isVoidBallActive(LivingEntity user, IStandPower power) {
         return isVoidBallActive(user);
@@ -122,8 +128,15 @@ public class CreamVoidBall extends StandEntityAction {
 
         playSound((PlayerEntity) user, InitSounds.CREAM_VOID_START.get(), false);
 
-        user.addEffect(new EffectInstance(InitEffects.VOIDED.get(), Integer.MAX_VALUE, 1, false, false));
-        standEntity.addEffect(new EffectInstance(ModStatusEffects.FULL_INVISIBILITY.get(), Integer.MAX_VALUE, 1, false, false));
+        user.addEffect(new EffectInstance(InitEffects.VOIDED.get(), Integer.MAX_VALUE, 0, false, false));
+        standEntity.addEffect(new EffectInstance(ModStatusEffects.FULL_INVISIBILITY.get(), Integer.MAX_VALUE, 0, false, false));
+
+        if (user instanceof PlayerEntity) {
+            PlayerEntity player = (PlayerEntity) user;
+            player.abilities.flying = true;
+            player.onUpdateAbilities();
+        }
+
     }
 
     @Override
@@ -172,6 +185,12 @@ public class CreamVoidBall extends StandEntityAction {
 
         AxisAlignedBB voidArea = user.getBoundingBox().inflate(1.5);
 
+        if (user instanceof PlayerEntity) {
+            PlayerEntity player = (PlayerEntity) user;
+            player.abilities.flying = true;
+            player.onUpdateAbilities();
+        }
+
         AtomicBoolean anyEntityTeleported = new AtomicBoolean(false);
 
         world.getEntitiesOfClass(Entity.class, voidArea).forEach(entity -> {
@@ -199,40 +218,10 @@ public class CreamVoidBall extends StandEntityAction {
             playSound((PlayerEntity) user, InitSounds.CREAM_VOID.get(), false);
         }
 
-        BlockPos centerPos = user.blockPosition();
-        int barrierYOffset = user.isShiftKeyDown() ? 2 : 1;
-        BlockPos barrierCenter = centerPos.below(barrierYOffset);
-
-        Set<BlockPos> currentBarrierPositions = new HashSet<>();
-        for (int dx = -1; dx <= 1; dx++) {
-            for (int dz = -1; dz <= 1; dz++) {
-                BlockPos pos = barrierCenter.offset(dx, 0, dz);
-                currentBarrierPositions.add(pos);
-                if (world.getBlockState(pos).isAir() || world.getBlockState(pos).getFluidState().isSource()) {
-                    world.setBlock(pos, InitBlocks.VOID_BARRIER.get().defaultBlockState(), 3);
-                    barrierPositions.add(pos);
-                }
-            }
-        }
-
-        barrierPositions.removeIf(pos -> {
-            if (!currentBarrierPositions.contains(pos)) {
-                world.setBlock(pos, Blocks.AIR.defaultBlockState(), 3);
-                return true;
-            }
-            return false;
-        });
-
+        BlockPos centerPos = new BlockPos(user.getX(), user.getEyeY() - 0.5, user.getZ());
         BlockPos.betweenClosedStream(centerPos.offset(-1, -1, -1), centerPos.offset(1, 1, 1)).forEach(pos -> {
-            if (world.getBlockState(pos).getBlock() != Blocks.BEDROCK &&
-                    world.getBlockState(pos).getBlock() != Blocks.BARRIER &&
-                    world.getBlockState(pos).getBlock() != InitBlocks.VOID_BARRIER.get() &&
-                    world.getBlockState(pos).getBlock() != Blocks.COMMAND_BLOCK &&
-                    world.getBlockState(pos).getBlock() != Blocks.END_PORTAL &&
-                    world.getBlockState(pos).getBlock() != Blocks.END_PORTAL_FRAME &&
-                    world.getBlockState(pos).getBlock() != Blocks.NETHER_PORTAL &&
-                    world.getBlockState(pos).getBlock() != Blocks.END_GATEWAY) {
-
+            BlockState state = world.getBlockState(pos);
+            if (!blacklist(state)) {
                 if (!world.getFluidState(pos).isEmpty()) {
                     world.setBlock(pos, Blocks.AIR.defaultBlockState(), 3);
                 } else {
@@ -240,6 +229,37 @@ public class CreamVoidBall extends StandEntityAction {
                 }
             }
         });
+
+        if (user.isShiftKeyDown()) {
+            BlockPos belowCenter = user.blockPosition().below();
+
+            for (int xOffset = -1; xOffset <= 1; xOffset++) {
+                for (int zOffset = -1; zOffset <= 1; zOffset++) {
+                    BlockPos targetPos = belowCenter.offset(xOffset, 0, zOffset);
+                    BlockState state = world.getBlockState(targetPos);
+
+                    if (!blacklist(state)) {
+                        if (!world.getFluidState(targetPos).isEmpty()) {
+                            world.setBlock(targetPos, Blocks.AIR.defaultBlockState(), 3);
+                        } else {
+                            world.destroyBlock(targetPos, false);
+                        }
+                    }
+                }
+            }
+        }
+
+        BlockPos groundCenter = user.blockPosition().below();
+        for (int xOffset = -1; xOffset <= 1; xOffset++) {
+            for (int zOffset = -1; zOffset <= 1; zOffset++) {
+                BlockPos groundPos = groundCenter.offset(xOffset, 0, zOffset);
+                BlockState groundState = world.getBlockState(groundPos);
+
+                if (GRASSY_BLOCKS.contains(groundState.getBlock())) {
+                    world.setBlock(groundPos, Blocks.DIRT.defaultBlockState(), 3);
+                }
+            }
+        }
 
         if (!world.getFluidState(centerPos).isEmpty()) {
             BlockPos.betweenClosedStream(centerPos.offset(-1, -1, -1), centerPos.offset(1, 1, 1)).forEach(pos -> {
@@ -252,6 +272,17 @@ public class CreamVoidBall extends StandEntityAction {
         if (userPower.getStamina() <= 0) {
             userPower.stopHeldAction(false);
         }
+    }
+
+    private boolean blacklist(BlockState state) {
+        return state.getBlock() == Blocks.BEDROCK ||
+                state.getBlock() == Blocks.BARRIER ||
+                state.getBlock() == InitBlocks.VOID_BARRIER.get() ||
+                state.getBlock() == Blocks.COMMAND_BLOCK ||
+                state.getBlock() == Blocks.END_PORTAL ||
+                state.getBlock() == Blocks.END_PORTAL_FRAME ||
+                state.getBlock() == Blocks.NETHER_PORTAL ||
+                state.getBlock() == Blocks.END_GATEWAY;
     }
 
     @Override
@@ -302,6 +333,13 @@ public class CreamVoidBall extends StandEntityAction {
             }
         }
 
+        if (user instanceof PlayerEntity && !((PlayerEntity) user).isCreative()) {
+            PlayerEntity player = (PlayerEntity) user;
+            player.abilities.mayfly = false;
+            player.abilities.flying = false;
+            player.onUpdateAbilities();
+        }
+
         activeBalls.remove(user.getUUID());
 
         user.removeEffect(InitEffects.VOIDED.get());
@@ -344,6 +382,13 @@ public class CreamVoidBall extends StandEntityAction {
                 stopSound(player, InitSounds.CREAM_VOID_START.get());
                 stopSound(player, InitSounds.CREAM_VOID_FORM_SHORT.get());
                 playSound(player, InitSounds.CREAM_VOID_END.get(), false);
+            }
+
+            if (user instanceof PlayerEntity && !((PlayerEntity) user).isCreative()) {
+                PlayerEntity player = (PlayerEntity) user;
+                player.abilities.mayfly = false;
+                player.abilities.flying = false;
+                player.onUpdateAbilities();
             }
         }
     }
