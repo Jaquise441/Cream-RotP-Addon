@@ -55,6 +55,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 public class CreamVoidBall extends StandEntityAction {
     private static final Set<UUID> activeBalls = new HashSet<>();
     private static final Map<UUID,Integer> mapActiveTicks = new HashMap<>();
+    private final Map<UUID, Integer> voidDamageCooldowns = new HashMap<>();
     public static final StandPose VOID_BALL = new StandPose("cream_void_ball");
     private final Map<Entity, Boolean> teleportedEntities = new HashMap<>();
     private static final int GET_FUCKED_LMAO = -9999;
@@ -72,7 +73,7 @@ public class CreamVoidBall extends StandEntityAction {
     protected Action<IStandPower> replaceAction(IStandPower power, ActionTarget target) {
         if(power.getStandManifestation() instanceof CreamEntity){
             CreamEntity creamEntity = (CreamEntity) power.getStandManifestation();
-            if(creamEntity.isSemiVoidActive()){
+            if(creamEntity.isSemiVoidActive() && CreamConfig.HAVE_VOIDDASH.get()){
                 return InitStands.CREAM_VOID_DASH.get();
             }
             if(creamEntity.isBallVoidActive()){
@@ -104,9 +105,13 @@ public class CreamVoidBall extends StandEntityAction {
 
     @Override
     public ActionConditionResult checkStandConditions(StandEntity stand, IStandPower power, ActionTarget target) {
+        CreamEntity creamEntity = (CreamEntity) power.getStandManifestation();
         if (stand.isManuallyControlled()) {
             return ActionConditionResult.createNegative(new TranslationTextComponent("message.cream.nu_uh"));
         }
+
+        if (creamEntity.isSemiVoidActive())
+            return ActionConditionResult.createNegative(new TranslationTextComponent("message.cream.nu_uh2"));
         return super.checkStandConditions(stand, power, target);
     }
 
@@ -125,18 +130,19 @@ public class CreamVoidBall extends StandEntityAction {
         mapActiveTicks.putIfAbsent(user.getUUID(),0);
 
         userPower.setCooldownTimer(InitStands.CREAM_VOID_BALL_CANCEL.get(), 20);
+        userPower.consumeStamina(CreamConfig.VOIDBALL_STAMINA.get().floatValue());
 
         playSound((PlayerEntity) user, InitSounds.CREAM_VOID_START.get(), false);
 
         user.addEffect(new EffectInstance(InitEffects.VOIDED.get(), Integer.MAX_VALUE, 0, false, false));
         standEntity.addEffect(new EffectInstance(ModStatusEffects.FULL_INVISIBILITY.get(), Integer.MAX_VALUE, 0, false, false));
 
-        if (user instanceof PlayerEntity) {
-            PlayerEntity player = (PlayerEntity) user;
-            player.abilities.flying = true;
-            player.onUpdateAbilities();
+        PlayerEntity player = (PlayerEntity) user;
+        player.abilities.flying = true;
+        if (player.isCreative()) {
+            player.abilities.mayfly = false;
         }
-
+        player.onUpdateAbilities();
     }
 
     @Override
@@ -192,6 +198,11 @@ public class CreamVoidBall extends StandEntityAction {
         if (user instanceof PlayerEntity) {
             PlayerEntity player = (PlayerEntity) user;
             player.abilities.flying = true;
+
+            if (player.isCreative()) {
+                player.abilities.mayfly = false;
+            }
+
             player.onUpdateAbilities();
         }
 
@@ -199,21 +210,44 @@ public class CreamVoidBall extends StandEntityAction {
 
         world.getEntitiesOfClass(Entity.class, voidArea).forEach(entity -> {
             if (entity != user && entity != standEntity && !teleportedEntities.containsKey(entity) &&
-                    (!(entity instanceof PlayerEntity) || !((PlayerEntity) entity).abilities.invulnerable) && !BlacklistHandler.isEntityBlacklisted(entity)) {
+                    (!(entity instanceof PlayerEntity) || !((PlayerEntity) entity).abilities.invulnerable) &&
+                    !BlacklistHandler.isEntityBlacklisted(entity)) {
 
-                if (entity instanceof PlayerEntity) {
-                    PlayerEntity playerEntity = (PlayerEntity) entity;
-                    if (playerEntity.isAlive()) {
-                        playerEntity.addEffect(new EffectInstance(Effects.INVISIBILITY, 20, 0, false, false));
-                        playerEntity.hurt(DamageSource.OUT_OF_WORLD, Float.MAX_VALUE);
+                if (CreamConfig.VOID_INSTAKILLS.get()) {
+                    if (entity instanceof PlayerEntity) {
+                        PlayerEntity playerEntity = (PlayerEntity) entity;
+                        if (playerEntity.isAlive()) {
+                            playerEntity.addEffect(new EffectInstance(Effects.INVISIBILITY, 20, 0, false, false));
+                            playerEntity.hurt(DamageSource.OUT_OF_WORLD, Float.MAX_VALUE);
+                            teleportedEntities.put(entity, true);
+                            anyEntityTeleported.set(true);
+                        }
+                    }
+                    else if (!(entity instanceof ItemEntity) || CreamConfig.VOIDBALL_DELETE_ITEMS.get()) {
+                        entity.teleportTo(entity.getX(), GET_FUCKED_LMAO, entity.getZ());
                         teleportedEntities.put(entity, true);
                         anyEntityTeleported.set(true);
                     }
-                }
-                else if (!(entity instanceof ItemEntity) || CreamConfig.VOIDBALL_DELETE_ITEMS.get()) {
-                    entity.teleportTo(entity.getX(), GET_FUCKED_LMAO, entity.getZ());
-                    teleportedEntities.put(entity, true);
-                    anyEntityTeleported.set(true);
+                } else {
+                    if (entity instanceof LivingEntity) {
+                        LivingEntity living = (LivingEntity) entity;
+                        int cooldown = voidDamageCooldowns.getOrDefault(entity.getUUID(), 0);
+
+                        if (cooldown <= 0) {
+                            boolean wasAlive = living.isAlive();
+                            living.hurt(DamageSource.OUT_OF_WORLD, CreamConfig.VOID_DAMAGE.get().floatValue());
+                            voidDamageCooldowns.put(entity.getUUID(), CreamConfig.VOID_DAMAGE_COOLDOWN.get());
+
+                            if (wasAlive && !living.isAlive()) {
+                                anyEntityTeleported.set(true);
+                            }
+                        } else {
+                            voidDamageCooldowns.put(entity.getUUID(), cooldown - 1);
+                        }
+                    }
+                    else if (!(entity instanceof ItemEntity) || CreamConfig.VOIDBALL_DELETE_ITEMS.get()) {
+                        entity.remove();
+                    }
                 }
             }
         });
@@ -286,6 +320,22 @@ public class CreamVoidBall extends StandEntityAction {
     public void onTaskStopped(World world, StandEntity standEntity, IStandPower userPower, StandEntityTask task, StandEntityAction newAction) {
         LivingEntity user = standEntity.getUser();
         if (user == null || world.isClientSide) return;
+
+        if (user instanceof PlayerEntity && !((PlayerEntity) user).isCreative()) {
+            PlayerEntity player = (PlayerEntity) user;
+            player.abilities.setFlyingSpeed(0.05F);
+            player.abilities.mayfly = false;
+            player.abilities.flying = false;
+            player.onUpdateAbilities();
+        }
+
+        if (user instanceof PlayerEntity && ((PlayerEntity) user).isCreative()) {
+            PlayerEntity player = (PlayerEntity) user;
+            player.abilities.setFlyingSpeed(0.05F);
+            player.abilities.mayfly = true;
+            player.abilities.flying = false;
+            player.onUpdateAbilities();
+        }
 
         if (activeBalls.contains(user.getUUID())) {
             if (!user.level.isClientSide) {
@@ -393,7 +443,16 @@ public class CreamVoidBall extends StandEntityAction {
 
             if (user instanceof PlayerEntity && !((PlayerEntity) user).isCreative()) {
                 PlayerEntity player = (PlayerEntity) user;
+                player.abilities.setFlyingSpeed(0.05F);
                 player.abilities.mayfly = false;
+                player.abilities.flying = false;
+                player.onUpdateAbilities();
+            }
+
+            if (user instanceof PlayerEntity && ((PlayerEntity) user).isCreative()) {
+                PlayerEntity player = (PlayerEntity) user;
+                player.abilities.setFlyingSpeed(0.05F);
+                player.abilities.mayfly = true;
                 player.abilities.flying = false;
                 player.onUpdateAbilities();
             }

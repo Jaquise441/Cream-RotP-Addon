@@ -1,0 +1,34 @@
+  {
+  "entity.rotp_cream.cream": "亚空瘴气",
+  "stand.rotp_cream.cream": "亚空瘴气",
+  "action.rotp_cream.cream_punch": "挥拳",
+  "action.rotp_cream.cream_heavy_punch": "重击",
+  "action.rotp_cream.cream_finisher_punch": "碎颅击",
+  "action.rotp_cream.cream_double_claw_finisher_punch": "终结爪击",
+  "action.rotp_cream.cream_claw": "爪击",
+  "action.rotp_cream.cream_heavy_claw": "重爪击",
+  "action.rotp_cream.cream_void_dash": "虚空冲刺",
+  "action.rotp_cream.cream_void_ball": "遁入虚空",
+  "action.rotp_cream.cream_semi_void_state": "进入替身",
+  "action.rotp_cream.cream_semi_void_state_cancel": "离开替身",
+  "action.rotp_cream.cream_void_ball_cancel": "显形",
+  "action.rotp_cream.cream_eat_item": "吞噬物品",
+  "action.rotp_cream.cream_eat_item_stack": "吞噬一组物品",
+  "action.rotp_cream.cream_block": "防御",
+  "action.rotp_cream.cream_chomp.chompy": "吞噬：%s",
+  "action.rotp_cream.cream_chomp.no_chompy": "吞噬",
+  "action.rotp_cream.cream_chop": "手刀",
+
+
+  "jojo.message.action_condition.no_item_in_offhand_cream": "将物品放在副手里即可让亚空瘴气吞噬它们",
+  "jojo.message.action_condition.no_target_chomp": "距离目标太远",
+
+  "message.cream.nu_uh": "无法在离体操控时使用",
+
+  "effect.rotp_cream.true_blindness": "完全失明",
+  "effect.rotp_cream.voided": "遁入虚空",
+  "effect.rotp_cream.weak_neck": "颈部损伤",
+  "effect.rotp_cream.bleeding": "流血"
+
+
+}

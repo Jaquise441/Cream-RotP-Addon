@@ -101,7 +101,6 @@ public class InitStands {
                     .standOffsetFromUser(0, 0, 0)
                     .standUserWalkSpeed(2F)
                     .heldWalkSpeed(0)
-                    .staminaCost(80)
                     .resolveLevelToUnlock(2)
                     .partsRequired(StandPart.ARMS)));
 
@@ -116,7 +115,6 @@ public class InitStands {
     public static final RegistryObject<StandEntityAction> CREAM_VOID_DASH = ACTIONS.register("cream_void_dash",
             () -> new CreamVoidDash(new StandEntityAction.Builder()
                     .staminaCostTick(4)
-                    .staminaCost(150)
                     .standPerformDuration(20)
                     .standUserWalkSpeed(2F)
                     .partsRequired(StandPart.ARMS)));

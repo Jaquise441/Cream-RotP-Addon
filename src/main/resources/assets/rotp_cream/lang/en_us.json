@@ -24,11 +24,13 @@
   "jojo.message.action_condition.no_target_chomp": "The entity is too far away for Cream to chomp on.",
 
   "message.cream.nu_uh": "You can only use this ability while manually controlling Cream.",
+  "message.cream.nu_uh2": "You cannot use this ability right now.",
 
   "effect.rotp_cream.true_blindness": "True Blindness",
   "effect.rotp_cream.voided": "Voided",
   "effect.rotp_cream.weak_neck": "Weak Neck",
-  "effect.rotp_cream.bleeding": "Bleeding"
+  "effect.rotp_cream.bleeding": "Bleeding",
+  "effect.rotp_cream.inside_cream": "Inside Cream"
 
 
 }

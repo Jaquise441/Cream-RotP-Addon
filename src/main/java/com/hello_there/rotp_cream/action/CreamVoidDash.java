@@ -43,6 +43,7 @@ public class CreamVoidDash extends StandEntityAction {
     private static final double SEARCH_RADIUS = 1.5;
     private static final int GET_FUCKED_LMAO = -9999;
     private final Set<UUID> teleportedEntities = new HashSet<>();
+    private final Map<UUID, Integer> voidDamageCooldowns = new HashMap<>();
     private Vector3d dashDirection;
     private static final Set<UUID> setPlayedDashSound = new HashSet<>();
     private static final Set<net.minecraft.block.Block> GRASSY_BLOCKS = new HashSet<net.minecraft.block.Block>() {{
@@ -63,6 +64,7 @@ public class CreamVoidDash extends StandEntityAction {
         return super.checkStandConditions(stand, power, target);
     }
 
+
     @Override
     public void standPerform(World world, StandEntity standEntity, IStandPower userPower, StandEntityTask task) {
         LivingEntity user = standEntity.getUser();
@@ -72,6 +74,7 @@ public class CreamVoidDash extends StandEntityAction {
 
         DASHES.add(user.getUUID());
         teleportedEntities.clear();
+        userPower.consumeStamina(CreamConfig.VOIDDASH_STAMINA.get().floatValue());
 
         playSound((PlayerEntity) user, InitSounds.CREAM_VOID_START.get(), false);
 
@@ -145,19 +148,41 @@ public class CreamVoidDash extends StandEntityAction {
                 continue;
             }
 
-            if (entity instanceof PlayerEntity) {
-                PlayerEntity player = (PlayerEntity) entity;
-                if (player.isAlive()) {
-                    player.addEffect(new EffectInstance(Effects.INVISIBILITY, 20, 0, false, false));
-                    player.hurt(DamageSource.OUT_OF_WORLD, Float.MAX_VALUE);
+            if (CreamConfig.VOID_INSTAKILLS.get()) {
+                if (entity instanceof PlayerEntity) {
+                    PlayerEntity player = (PlayerEntity) entity;
+                    if (player.isAlive()) {
+                        player.addEffect(new EffectInstance(Effects.INVISIBILITY, 20, 0, false, false));
+                        player.hurt(DamageSource.OUT_OF_WORLD, Float.MAX_VALUE);
+                        teleportedEntities.add(entity.getUUID());
+                        anyEntityTeleported = true;
+                    }
+                }
+                else if (!(entity instanceof ItemEntity) || CreamConfig.VOIDDASH_DELETE_ITEMS.get()) {
+                    entity.teleportTo(entity.getX(), GET_FUCKED_LMAO, entity.getZ());
                     teleportedEntities.add(entity.getUUID());
                     anyEntityTeleported = true;
                 }
-            }
-            else if (!(entity instanceof ItemEntity) || CreamConfig.VOIDDASH_DELETE_ITEMS.get()) {
-                entity.teleportTo(entity.getX(), GET_FUCKED_LMAO, entity.getZ());
-                teleportedEntities.add(entity.getUUID());
-                anyEntityTeleported = true;
+            } else {
+                if (entity instanceof LivingEntity) {
+                    LivingEntity living = (LivingEntity) entity;
+                    int cooldown = voidDamageCooldowns.getOrDefault(entity.getUUID(), 0);
+
+                    if (cooldown <= 0) {
+                        boolean wasAlive = living.isAlive();
+                        living.hurt(DamageSource.OUT_OF_WORLD, CreamConfig.VOID_DAMAGE.get().floatValue());
+                        voidDamageCooldowns.put(entity.getUUID(), CreamConfig.VOID_DAMAGE_COOLDOWN.get());
+
+                        if (wasAlive && !living.isAlive()) {
+                            anyEntityTeleported = true;
+                        }
+                    } else {
+                        voidDamageCooldowns.put(entity.getUUID(), cooldown - 1);
+                    }
+                }
+                else if (!(entity instanceof ItemEntity) || CreamConfig.VOIDDASH_DELETE_ITEMS.get()) {
+                    entity.remove();
+                }
             }
         }
 

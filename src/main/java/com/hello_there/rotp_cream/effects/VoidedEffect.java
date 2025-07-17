@@ -29,7 +29,6 @@ public class VoidedEffect extends UncurableEffect {
 
             entity.addEffect(new EffectInstance(ModStatusEffects.FULL_INVISIBILITY.get(), duration, 0, false, false));
             entity.addEffect(new EffectInstance(Effects.INVISIBILITY, duration, 0, false, false));
-            entity.addEffect(new EffectInstance(Effects.MOVEMENT_SPEED, duration, 6, false, false));
             entity.addEffect(new EffectInstance(InitEffects.TRUE_BLINDNESS.get(), duration, 0, false, false));
 
             if (entity instanceof PlayerEntity) {
@@ -47,8 +46,6 @@ public class VoidedEffect extends UncurableEffect {
 
         entity.removeEffect(ModStatusEffects.FULL_INVISIBILITY.get());
         entity.removeEffect(Effects.INVISIBILITY);
-        entity.removeEffect(Effects.MOVEMENT_SPEED);
-        entity.removeEffect(Effects.BLINDNESS);
         entity.removeEffect(InitEffects.TRUE_BLINDNESS.get());
 
         if (entity instanceof PlayerEntity) {

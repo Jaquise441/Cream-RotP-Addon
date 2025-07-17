@@ -89,16 +89,17 @@ public class CreamSemiVoidState extends StandEntityAction {
         if (user == null || world.isClientSide) return;
         activeTicksMap.putIfAbsent(userPower.getUser().getUUID(),0);
 
-
         semiVoidActives.add(user.getUUID());
 
         userPower.setCooldownTimer(InitStands.CREAM_SEMI_VOID_STATE_CANCEL.get(), 20);
+        userPower.consumeStamina(CreamConfig.SEMIVOID_STAMINA.get().floatValue());
 
         user.addEffect(new EffectInstance(ModStatusEffects.FULL_INVISIBILITY.get(), Integer.MAX_VALUE, 1, false, false));
         user.addEffect(new EffectInstance(Effects.INVISIBILITY, Integer.MAX_VALUE, 1, false, false));
 
         if (user instanceof PlayerEntity) {
             PlayerEntity player = (PlayerEntity) user;
+            player.abilities.setFlyingSpeed((float)CreamConfig.SEMIVOID_FLY_SPEED.get().doubleValue());
             player.abilities.flying = true;
             player.onUpdateAbilities();
         }
@@ -131,9 +132,17 @@ public class CreamSemiVoidState extends StandEntityAction {
 
         if (user instanceof PlayerEntity) {
             PlayerEntity player = (PlayerEntity) user;
+            float flySpeed = player.isSprinting() ? (float)CreamConfig.SEMIVOID_FLY_SPEED_SPRINT.get().doubleValue() : (float)CreamConfig.SEMIVOID_FLY_SPEED.get().doubleValue();
+            player.abilities.setFlyingSpeed(flySpeed);
             player.abilities.flying = true;
+
+            if (player.isCreative()) {
+                player.abilities.mayfly = false;
+            }
+
             player.onUpdateAbilities();
         }
+
 
         if (standEntity.isManuallyControlled()) {
             CreamSemiVoidStateCancel cancelAction = (CreamSemiVoidStateCancel) InitStands.CREAM_SEMI_VOID_STATE_CANCEL.get();
@@ -207,7 +216,16 @@ public class CreamSemiVoidState extends StandEntityAction {
 
         if (user instanceof PlayerEntity && !((PlayerEntity) user).isCreative()) {
             PlayerEntity player = (PlayerEntity) user;
+            player.abilities.setFlyingSpeed(0.05F);
             player.abilities.mayfly = false;
+            player.abilities.flying = false;
+            player.onUpdateAbilities();
+        }
+
+        if (user instanceof PlayerEntity && ((PlayerEntity) user).isCreative()) {
+            PlayerEntity player = (PlayerEntity) user;
+            player.abilities.setFlyingSpeed(0.05F);
+            player.abilities.mayfly = true;
             player.abilities.flying = false;
             player.onUpdateAbilities();
         }
@@ -223,7 +241,16 @@ public class CreamSemiVoidState extends StandEntityAction {
 
             if (user instanceof PlayerEntity && !((PlayerEntity) user).isCreative()) {
                 PlayerEntity player = (PlayerEntity) user;
+                player.abilities.setFlyingSpeed(0.05F);
                 player.abilities.mayfly = false;
+                player.abilities.flying = false;
+                player.onUpdateAbilities();
+            }
+
+            if (user instanceof PlayerEntity && ((PlayerEntity) user).isCreative()) {
+                PlayerEntity player = (PlayerEntity) user;
+                player.abilities.setFlyingSpeed(0.05F);
+                player.abilities.mayfly = true;
                 player.abilities.flying = false;
                 player.onUpdateAbilities();
             }

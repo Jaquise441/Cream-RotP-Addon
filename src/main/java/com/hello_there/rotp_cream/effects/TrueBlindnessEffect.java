@@ -2,9 +2,11 @@ package com.hello_there.rotp_cream.effects;
 
 import com.github.standobyte.jojo.potion.UncurableEffect;
 import com.hello_there.rotp_cream.init.InitEffects;
+import net.minecraft.client.Minecraft;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.potion.EffectType;
+import net.minecraftforge.client.event.InputEvent;
 import net.minecraftforge.event.entity.living.LivingEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 

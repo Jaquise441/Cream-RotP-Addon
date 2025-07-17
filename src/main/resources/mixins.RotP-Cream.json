@@ -13,7 +13,10 @@
     "VoidedCleanupMixin",
     "DimensionChangeMixin",
     "PlayerLogoutMixin",
-    "SpectatorMixin"
+    "SpectatorMixin",
+    "F1Mixin",
+    "InsideCreamMixin",
+    "VoidDamageMixin"
   ],
   "injectors": {
     "defaultRequire": 1

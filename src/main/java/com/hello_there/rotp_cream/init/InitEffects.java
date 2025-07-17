@@ -27,4 +27,8 @@ public class InitEffects {
     public static final RegistryObject<Effect> VOIDED = EFFECTS.register("voided",
             () -> new VoidedEffect(0x000000));
 
+    public static final RegistryObject<Effect> INSIDE_CREAM = EFFECTS.register("inside_cream",
+            () -> new InsideCreamEffect(0x000000));
+
+
 }
