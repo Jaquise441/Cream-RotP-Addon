@@ -3,7 +3,6 @@ package com.hello_there.rotp_cream.action;
 import com.github.standobyte.jojo.action.Action;
 import com.github.standobyte.jojo.action.ActionConditionResult;
 import com.github.standobyte.jojo.action.ActionTarget;
-import com.github.standobyte.jojo.action.non_stand.HamonSunlightYellowOverdrive;
 import com.github.standobyte.jojo.action.stand.StandEntityAction;
 import com.github.standobyte.jojo.entity.stand.StandEntity;
 import com.github.standobyte.jojo.entity.stand.StandEntityTask;
@@ -14,23 +13,14 @@ import com.github.standobyte.jojo.power.impl.nonstand.INonStandPower;
 import com.github.standobyte.jojo.power.impl.stand.IStandPower;
 import com.hello_there.rotp_cream.config.CreamConfig;
 import com.hello_there.rotp_cream.entity.CreamEntity;
-import com.hello_there.rotp_cream.init.InitEffects;
 import com.hello_there.rotp_cream.init.InitStands;
-import com.hello_there.rotp_cream.init.InitSounds;
-import net.minecraft.client.Minecraft;
-import net.minecraft.client.entity.player.ClientPlayerEntity;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.network.PacketBuffer;
 import net.minecraft.potion.EffectInstance;
 import net.minecraft.potion.Effects;
 import net.minecraft.util.DamageSource;
 import net.minecraft.util.text.TranslationTextComponent;
 import net.minecraft.world.World;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.api.distmarker.OnlyIn;
-import net.minecraftforge.client.event.RenderWorldLastEvent;
-import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.event.entity.living.LivingAttackEvent;
 import net.minecraftforge.event.entity.player.EntityItemPickupEvent;
 import net.minecraftforge.event.entity.player.PlayerEvent;
@@ -39,7 +29,6 @@ import net.minecraftforge.event.world.BlockEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 
-import javax.annotation.Nullable;
 import java.util.*;
 
 public class CreamSemiVoidState extends StandEntityAction {
@@ -99,7 +88,7 @@ public class CreamSemiVoidState extends StandEntityAction {
 
         if (user instanceof PlayerEntity) {
             PlayerEntity player = (PlayerEntity) user;
-            player.abilities.setFlyingSpeed((float)CreamConfig.SEMIVOID_FLY_SPEED.get().doubleValue());
+            CreamVoidBall.setPlayerFlyingSpeed(player,(float)CreamConfig.SEMIVOID_FLY_SPEED.get().doubleValue());
             player.abilities.flying = true;
             player.onUpdateAbilities();
         }
@@ -133,7 +122,7 @@ public class CreamSemiVoidState extends StandEntityAction {
         if (user instanceof PlayerEntity) {
             PlayerEntity player = (PlayerEntity) user;
             float flySpeed = player.isSprinting() ? (float)CreamConfig.SEMIVOID_FLY_SPEED_SPRINT.get().doubleValue() : (float)CreamConfig.SEMIVOID_FLY_SPEED.get().doubleValue();
-            player.abilities.setFlyingSpeed(flySpeed);
+            CreamVoidBall.setPlayerFlyingSpeed(player,flySpeed);
             player.abilities.flying = true;
 
             if (player.isCreative()) {
@@ -216,7 +205,7 @@ public class CreamSemiVoidState extends StandEntityAction {
 
         if (user instanceof PlayerEntity && !((PlayerEntity) user).isCreative()) {
             PlayerEntity player = (PlayerEntity) user;
-            player.abilities.setFlyingSpeed(0.05F);
+            CreamVoidBall.setPlayerFlyingSpeed(player,0.05F);
             player.abilities.mayfly = false;
             player.abilities.flying = false;
             player.onUpdateAbilities();
@@ -224,7 +213,7 @@ public class CreamSemiVoidState extends StandEntityAction {
 
         if (user instanceof PlayerEntity && ((PlayerEntity) user).isCreative()) {
             PlayerEntity player = (PlayerEntity) user;
-            player.abilities.setFlyingSpeed(0.05F);
+            CreamVoidBall.setPlayerFlyingSpeed(player,0.05F);
             player.abilities.mayfly = true;
             player.abilities.flying = false;
             player.onUpdateAbilities();
@@ -241,7 +230,7 @@ public class CreamSemiVoidState extends StandEntityAction {
 
             if (user instanceof PlayerEntity && !((PlayerEntity) user).isCreative()) {
                 PlayerEntity player = (PlayerEntity) user;
-                player.abilities.setFlyingSpeed(0.05F);
+                CreamVoidBall.setPlayerFlyingSpeed(player,0.05F);
                 player.abilities.mayfly = false;
                 player.abilities.flying = false;
                 player.onUpdateAbilities();
@@ -249,7 +238,7 @@ public class CreamSemiVoidState extends StandEntityAction {
 
             if (user instanceof PlayerEntity && ((PlayerEntity) user).isCreative()) {
                 PlayerEntity player = (PlayerEntity) user;
-                player.abilities.setFlyingSpeed(0.05F);
+                CreamVoidBall.setPlayerFlyingSpeed(player,0.05F);
                 player.abilities.mayfly = true;
                 player.abilities.flying = false;
                 player.onUpdateAbilities();

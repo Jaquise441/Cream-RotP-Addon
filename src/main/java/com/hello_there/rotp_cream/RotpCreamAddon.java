@@ -35,5 +35,6 @@ public class RotpCreamAddon {
 
     private void setup(final FMLCommonSetupEvent event) {
         BlacklistHandler.init();
+        InitEffects.afterEffectsRegister();
     }
 }

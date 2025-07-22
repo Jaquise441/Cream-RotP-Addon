@@ -1,5 +1,6 @@
 package com.hello_there.rotp_cream.init;
 
+import com.github.standobyte.jojo.init.ModStatusEffects;
 import com.hello_there.rotp_cream.RotpCreamAddon;
 import com.hello_there.rotp_cream.effects.*;
 import net.minecraft.potion.Effect;
@@ -30,5 +31,9 @@ public class InitEffects {
     public static final RegistryObject<Effect> INSIDE_CREAM = EFFECTS.register("inside_cream",
             () -> new InsideCreamEffect(0x000000));
 
-
+    public static void afterEffectsRegister(){
+        ModStatusEffects.setEffectAsTracked(
+                INSIDE_CREAM.get()
+        );
+    }
 }

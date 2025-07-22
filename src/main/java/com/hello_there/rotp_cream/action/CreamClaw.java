@@ -57,28 +57,30 @@ public class CreamClaw extends StandEntityLightAttack {
         @Override
         protected void afterAttack(StandEntity stand, Entity target, StandEntityDamageSource dmgSource, StandEntityTask task, boolean hurt, boolean killed) {
             super.afterAttack(stand, target, dmgSource, task, hurt, killed);
+            if(target instanceof LivingEntity){
+                LivingEntity targetio = (LivingEntity) target;
 
-            LivingEntity targetio = (LivingEntity) target;
+                int currentLevel = targetio.hasEffect(InitEffects.BLEEDING.get()) ?
+                        targetio.getEffect(InitEffects.BLEEDING.get()).getAmplifier() : -1;
 
-            int currentLevel = targetio.hasEffect(InitEffects.BLEEDING.get()) ?
-                    targetio.getEffect(InitEffects.BLEEDING.get()).getAmplifier() : -1;
+                int newLevel;
+                if (currentLevel < 0) {
+                    newLevel = 0;
+                } else if (currentLevel < 2) {
+                    newLevel = currentLevel + 1;
+                } else {
+                    newLevel = 2;
+                }
 
-            int newLevel;
-            if (currentLevel < 0) {
-                newLevel = 0;
-            } else if (currentLevel < 2) {
-                newLevel = currentLevel + 1;
-            } else {
-                newLevel = 2;
+                if (currentLevel >= 0) {
+                    targetio.removeEffect(InitEffects.BLEEDING.get());
+                }
+
+                targetio.addEffect(new EffectInstance(
+                        InitEffects.BLEEDING.get(), 25, newLevel, false, false)
+                );
             }
 
-            if (currentLevel >= 0) {
-                targetio.removeEffect(InitEffects.BLEEDING.get());
-            }
-
-            targetio.addEffect(new EffectInstance(
-                    InitEffects.BLEEDING.get(), 25, newLevel, false, false)
-            );
         }
     }
 }

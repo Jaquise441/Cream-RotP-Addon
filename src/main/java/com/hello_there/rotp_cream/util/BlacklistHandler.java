@@ -1,9 +1,11 @@
 package com.hello_there.rotp_cream.util;
 
+import com.hello_there.rotp_cream.RotpCreamAddon;
 import com.hello_there.rotp_cream.config.CreamConfig;
 import net.minecraft.block.Block;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityType;
+import net.minecraft.entity.passive.PigEntity;
 import net.minecraft.util.ResourceLocation;
 import net.minecraftforge.registries.ForgeRegistries;
 
@@ -29,12 +31,12 @@ public class BlacklistHandler {
             }
         }
 
-        for (String id : CreamConfig.VOID_ENTITY_BLACKLIST.get()) {
-            EntityType<?> entityType = ForgeRegistries.ENTITIES.getValue(new ResourceLocation(id));
-            if (entityType != null) {
-                entityBlacklist.add(entityType);
+        for (EntityType<?> type: ForgeRegistries.ENTITIES){
+            if(CreamConfig.VOID_ENTITY_BLACKLIST.get().contains(type.getRegistryName().toString())){
+                entityBlacklist.add(type);
             }
         }
+
     }
 
     public static boolean isBlockBlacklisted(Block block) {
