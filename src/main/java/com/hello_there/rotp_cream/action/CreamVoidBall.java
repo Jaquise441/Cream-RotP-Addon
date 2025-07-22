@@ -26,6 +26,7 @@ import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.item.ItemEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.ServerPlayerEntity;
+import net.minecraft.nbt.CompoundNBT;
 import net.minecraft.network.play.server.SPlaySoundEffectPacket;
 import net.minecraft.network.play.server.SStopSoundPacket;
 import net.minecraft.potion.EffectInstance;
@@ -323,7 +324,7 @@ public class CreamVoidBall extends StandEntityAction {
 
         if (user instanceof PlayerEntity && !((PlayerEntity) user).isCreative()) {
             PlayerEntity player = (PlayerEntity) user;
-            player.abilities.setFlyingSpeed(0.05F);
+            setPlayerFlyingSpeed(player, .05F);
             player.abilities.mayfly = false;
             player.abilities.flying = false;
             player.onUpdateAbilities();
@@ -331,7 +332,7 @@ public class CreamVoidBall extends StandEntityAction {
 
         if (user instanceof PlayerEntity && ((PlayerEntity) user).isCreative()) {
             PlayerEntity player = (PlayerEntity) user;
-            player.abilities.setFlyingSpeed(0.05F);
+            setPlayerFlyingSpeed(player, .05F);
             player.abilities.mayfly = true;
             player.abilities.flying = false;
             player.onUpdateAbilities();
@@ -443,7 +444,7 @@ public class CreamVoidBall extends StandEntityAction {
 
             if (user instanceof PlayerEntity && !((PlayerEntity) user).isCreative()) {
                 PlayerEntity player = (PlayerEntity) user;
-                player.abilities.setFlyingSpeed(0.05F);
+                setPlayerFlyingSpeed(player, .05F);
                 player.abilities.mayfly = false;
                 player.abilities.flying = false;
                 player.onUpdateAbilities();
@@ -451,12 +452,19 @@ public class CreamVoidBall extends StandEntityAction {
 
             if (user instanceof PlayerEntity && ((PlayerEntity) user).isCreative()) {
                 PlayerEntity player = (PlayerEntity) user;
-                player.abilities.setFlyingSpeed(0.05F);
+                setPlayerFlyingSpeed(player, .05F);
                 player.abilities.mayfly = true;
                 player.abilities.flying = false;
                 player.onUpdateAbilities();
             }
         }
+    }
+
+
+    public static void setPlayerFlyingSpeed(PlayerEntity player, float speed){
+        CompoundNBT nbt = player.serializeNBT();
+        nbt.putFloat("flySpeed",speed);
+
     }
 
     @SubscribeEvent
