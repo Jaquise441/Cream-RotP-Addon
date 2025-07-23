@@ -20,7 +20,8 @@ public class InsideCreamRenderer {
         Minecraft mc = Minecraft.getInstance();
         MatrixStack matrixStack = event.getMatrixStack();
         if (event.getType() == RenderGameOverlayEvent.ElementType.ALL) {
-            if (mc.player != null && (mc.player.hasEffect(InitEffects.INSIDE_CREAM.get()))) {
+            if (mc.player != null && (mc.player.hasEffect(InitEffects.INSIDE_CREAM.get()))
+                    && mc.options.getCameraType().isFirstPerson()) {
                 mc.getTextureManager().bind(INSIDE_CREAM);
                 int screenWidth = mc.getWindow().getGuiScaledWidth();
                 int screenHeight = mc.getWindow().getGuiScaledHeight();

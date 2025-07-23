@@ -120,6 +120,7 @@ public class CreamVoidBall extends StandEntityAction {
     public void onTaskSet(World world, StandEntity standEntity, IStandPower standPower, Phase phase, StandEntityTask task, int ticks) {
         super.onTaskSet(world, standEntity, standPower, phase, task, ticks);
         mapActiveTicks.putIfAbsent(standPower.getUser().getUUID(),0);
+
     }
 
     @Override

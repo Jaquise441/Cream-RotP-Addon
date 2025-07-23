@@ -13,6 +13,7 @@ import com.github.standobyte.jojo.power.impl.nonstand.INonStandPower;
 import com.github.standobyte.jojo.power.impl.stand.IStandPower;
 import com.hello_there.rotp_cream.config.CreamConfig;
 import com.hello_there.rotp_cream.entity.CreamEntity;
+import com.hello_there.rotp_cream.init.InitEffects;
 import com.hello_there.rotp_cream.init.InitStands;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.player.PlayerEntity;
@@ -79,12 +80,13 @@ public class CreamSemiVoidState extends StandEntityAction {
         activeTicksMap.putIfAbsent(userPower.getUser().getUUID(),0);
 
         semiVoidActives.add(user.getUUID());
+        user.addEffect(new EffectInstance(InitEffects.INSIDE_CREAM.get(),Integer.MAX_VALUE,0,false,false,false));
+
 
         userPower.setCooldownTimer(InitStands.CREAM_SEMI_VOID_STATE_CANCEL.get(), 20);
         userPower.consumeStamina(CreamConfig.SEMIVOID_STAMINA.get().floatValue());
 
         user.addEffect(new EffectInstance(ModStatusEffects.FULL_INVISIBILITY.get(), Integer.MAX_VALUE, 1, false, false));
-        user.addEffect(new EffectInstance(Effects.INVISIBILITY, Integer.MAX_VALUE, 1, false, false));
 
         if (user instanceof PlayerEntity) {
             PlayerEntity player = (PlayerEntity) user;

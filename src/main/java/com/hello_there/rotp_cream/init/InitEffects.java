@@ -33,7 +33,8 @@ public class InitEffects {
 
     public static void afterEffectsRegister(){
         ModStatusEffects.setEffectAsTracked(
-                INSIDE_CREAM.get()
+                INSIDE_CREAM.get(),
+                TRUE_BLINDNESS.get()
         );
     }
 }
