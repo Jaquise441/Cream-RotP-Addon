@@ -24,11 +24,11 @@
   "jojo.message.action_condition.no_target_chomp": "距离目标太远",
 
   "message.cream.nu_uh": "无法在离体操控时使用",
+  "message.cream_nu_uh2": "当前无法使用该技能",
 
   "effect.rotp_cream.true_blindness": "完全失明",
   "effect.rotp_cream.voided": "遁入虚空",
   "effect.rotp_cream.weak_neck": "颈部损伤",
   "effect.rotp_cream.bleeding": "流血"
-
-
+  "effect.rotp_cream.inside_cream": "位于亚空瘴气体内"
 }
