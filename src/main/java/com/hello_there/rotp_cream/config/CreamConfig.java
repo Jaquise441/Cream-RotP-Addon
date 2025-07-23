@@ -56,6 +56,8 @@ public class CreamConfig {
     public static final ForgeConfigSpec.DoubleValue VOIDBALL_STAMINA;
     public static final ForgeConfigSpec.DoubleValue SEMIVOID_STAMINA;
     public static final ForgeConfigSpec.DoubleValue VOIDDASH_STAMINA;
+    public static final ForgeConfigSpec.BooleanValue EXCLUDE_VOID_FROM_BLOCK_BREAKING;
+    public static final ForgeConfigSpec.BooleanValue CONVERT_GRASS_TO_DIRT;
 
     static {
         BUILDER.push("Cream Chop Config");
@@ -79,7 +81,7 @@ public class CreamConfig {
                 .defineInRange("eatItemStackCooldown", 80, 0, 120000);
         BUILDER.pop();
 
-        BUILDER.push("Void-Killing Config");
+        BUILDER.push("Void-Killing and Block Breaking Config");
         VOID_INSTAKILLS = BUILDER
                 .comment("Whether entities should be instantly killed by Enter the Void and Void Dash (true) or take damage instead (false). If it is set to false (so damaging instead) the deletion sound only plays if the entity dies, so there is no indication on if you hit an entity or not. (Default is true)")
                 .define("voidInstaKills", true);
@@ -89,6 +91,12 @@ public class CreamConfig {
         VOID_DAMAGE_COOLDOWN = BUILDER
                 .comment("Cooldown (in ticks) between each damaging of an entity by the void. This means that if an entity that has more health than what Cream does as damage while in Enter the Void, it takes (by default) 20 ticks for the entity to get damaged by the void again if they are still in it. In other words, it's invisibility frames. Should be obvious, but this only works if Instakilling Void is set to false. (Default is 20 = 1 second)")
                 .defineInRange("voidDamageCooldown", 20, 0, 120000);
+        EXCLUDE_VOID_FROM_BLOCK_BREAKING = BUILDER
+                .comment("Whether Enter the Void or Void Dash should ignore the jojoAbilitiesBreakBlocks gamerule and always break blocks (true) or abide by the gamerule (false). (Default is false)")
+                .define("excludeVoidFromBlockBreaking", false);
+        CONVERT_GRASS_TO_DIRT = BUILDER
+                .comment("Whether Enter the Void and Void Dash should scrape the grass off of grassy blocks (grass, mycelium, podzol) and convert it to dirt (true) or don't (false) (Default is true)")
+                .define("convertGrassToDirt", true);
         BUILDER.pop();
 
         BUILDER.push("Cream Enter the Void Config");

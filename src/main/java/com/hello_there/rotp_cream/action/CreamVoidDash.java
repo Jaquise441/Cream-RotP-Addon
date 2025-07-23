@@ -6,6 +6,7 @@ import com.github.standobyte.jojo.action.ActionTarget;
 import com.github.standobyte.jojo.action.stand.StandEntityAction;
 import com.github.standobyte.jojo.entity.stand.StandEntity;
 import com.github.standobyte.jojo.entity.stand.StandEntityTask;
+import com.github.standobyte.jojo.init.ModGamerules;
 import com.github.standobyte.jojo.init.ModStatusEffects;
 import com.github.standobyte.jojo.power.impl.stand.IStandPower;
 import com.hello_there.rotp_cream.config.CreamConfig;
@@ -191,16 +192,18 @@ public class CreamVoidDash extends StandEntityAction {
         }
 
         BlockPos centerPos = new BlockPos(user.getX(), user.getEyeY() - 0.5, user.getZ());
-        BlockPos.betweenClosedStream(centerPos.offset(-1, -1, -1), centerPos.offset(1, 1, 1)).forEach(pos -> {
-            BlockState state = world.getBlockState(pos);
-            if (!blacklisted(state)) {
-                if (!world.getFluidState(pos).isEmpty()) {
-                    world.setBlock(pos, Blocks.AIR.defaultBlockState(), 3);
-                } else {
-                    world.destroyBlock(pos, false);
+        if (canBreakBlocks(world, user)) {
+            BlockPos.betweenClosedStream(centerPos.offset(-1, -1, -1), centerPos.offset(1, 1, 1)).forEach(pos -> {
+                BlockState state = world.getBlockState(pos);
+                if (!blacklisted(state)) {
+                    if (!world.getFluidState(pos).isEmpty()) {
+                        world.setBlock(pos, Blocks.AIR.defaultBlockState(), 3);
+                    } else {
+                        world.destroyBlock(pos, false);
+                    }
                 }
-            }
-        });
+            });
+        }
 
         if (user.isShiftKeyDown()) {
             BlockPos belowCenter = user.blockPosition().below();
@@ -221,17 +224,26 @@ public class CreamVoidDash extends StandEntityAction {
             }
         }
 
-        BlockPos groundCenter = user.blockPosition().below();
-        for (int xOffset = -1; xOffset <= 1; xOffset++) {
-            for (int zOffset = -1; zOffset <= 1; zOffset++) {
-                BlockPos groundPos = groundCenter.offset(xOffset, 0, zOffset);
-                BlockState groundState = world.getBlockState(groundPos);
+        if (CreamConfig.CONVERT_GRASS_TO_DIRT.get()) {
+            BlockPos groundCenter = user.blockPosition().below();
+            for (int xOffset = -1; xOffset <= 1; xOffset++) {
+                for (int zOffset = -1; zOffset <= 1; zOffset++) {
+                    BlockPos groundPos = groundCenter.offset(xOffset, 0, zOffset);
+                    BlockState groundState = world.getBlockState(groundPos);
 
-                if (GRASSY_BLOCKS.contains(groundState.getBlock())) {
-                    world.setBlock(groundPos, Blocks.DIRT.defaultBlockState(), 3);
+                    if (GRASSY_BLOCKS.contains(groundState.getBlock())) {
+                        world.setBlock(groundPos, Blocks.DIRT.defaultBlockState(), 3);
+                    }
                 }
             }
         }
+    }
+
+    private boolean canBreakBlocks(World world, LivingEntity user) {
+        if (CreamConfig.EXCLUDE_VOID_FROM_BLOCK_BREAKING.get()) {
+            return true;
+        }
+        return world.getGameRules().getBoolean(ModGamerules.BREAK_BLOCKS);
     }
 
     @Override
