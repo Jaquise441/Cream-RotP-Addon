@@ -480,14 +480,14 @@ public class CreamVoidBall extends StandEntityAction {
 
     }
 
-    @SubscribeEvent
-    public static void onEntityViewRender(EntityViewRenderEvent.FogDensity event) {
-        Minecraft mc = Minecraft.getInstance();
-        if (mc.player != null && mc.player.hasEffect(InitEffects.TRUE_BLINDNESS.get())) {
-            event.setDensity(0.5f);
-            event.setCanceled(true);
-        }
-    }
+//    @SubscribeEvent
+//    public static void onEntityViewRender(EntityViewRenderEvent.FogDensity event) {
+//        Minecraft mc = Minecraft.getInstance();
+//        if (mc.player != null && mc.player.hasEffect(InitEffects.TRUE_BLINDNESS.get())) {
+//            event.setDensity(0.5f);
+//            event.setCanceled(true);
+//        }
+//    }
 
 
 
